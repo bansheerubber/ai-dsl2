@@ -1,0 +1,40 @@
+WHITESPACE_WITHOUT_NEWLINE = _{ " " | "\t" }
+WHITESPACE = _{ WHITESPACE_WITHOUT_NEWLINE | NEWLINE }
+
+alpha = _{ 'a'..'z' | 'A'..'Z' }
+non_zero_digit = _{ '1'..'9' }
+digit = _{ '0'..'9' }
+special = _{ "_" }
+
+integer = @{ (non_zero_digit ~ digit+) | digit }
+float = @{ digit+ ~ "." ~ digit+ }
+number = _{ integer | float }
+string_literal = @{ (("'") ~ ('\x00'..'\x26' | '\x28'..'\xFF')* ~ ("'")) | (("\"") ~ ('\x00'..'\x21' | '\x23'..'\xFF')* ~ ("\"")) }
+
+token = @{ (alpha | special) ~ (alpha | digit | special)+ }
+variable_declaration = { "let" ~ token ~ assignment_operator ~ math }
+
+function_args = { (math ~ ",")* ~ math }
+function_call = { token ~ "(" ~ function_args? ~ ")" }
+
+assignment_operator = { "=" | "+=" | "-=" | "*=" | "/=" | "&&=" | "||=" | "&=" | "|=" | "^=" }
+binary_operator = { "+" | "-" | "*" | "/" | "&&" | "||" | "&" | "|" | "^" | ">" | "<" | ">=" | "<=" | "==" | "!=" }
+unary_operator = { "-" | "!" | "#" }
+
+operand = _{ number | string_literal | function_call | token }
+primary = _{ operand | ( "(" ~ math ~ ")") }
+math = { unary_operator? ~ primary ~ (binary_operator ~ unary_operator? ~ primary)* }
+
+expression = _{ variable_declaration | math }
+
+if_statement = { "if" ~ "(" ~ expression ~ ")" ~ "{" ~ body* ~ "}" ~ else_if_statement* ~ else_statement? }
+else_if_statement = { "else if" ~ "(" ~ expression ~ ")" ~ "{" ~ body* ~ "}" }
+else_statement = { "else" ~ "{" ~ body* ~ "}" }
+
+while_loop = { "while" ~ "(" ~ expression ~ ")" ~ "{" ~ body* ~ "}" }
+for_loop = { "for" ~ "(" ~ expression ~ ")" ~ "{" ~ body* ~ "}" }
+
+line = _{ expression ~ ";" }
+body = _{ if_statement | while_loop | for_loop | line }
+
+program = _{ SOI ~ body+ ~ EOI }
