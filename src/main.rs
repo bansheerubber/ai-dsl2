@@ -8,6 +8,7 @@ use pest::Parser;
 struct DSLParser;
 
 fn main() {
-	let result = DSLParser::parse(Rule::program, "printf(#5);");
+	let program = std::fs::read_to_string("test.ai").unwrap();
+	let result = DSLParser::parse(Rule::program, &program);
 	println!("{:?}", result);
 }

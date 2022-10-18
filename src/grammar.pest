@@ -12,7 +12,7 @@ number = _{ integer | float }
 string_literal = @{ (("'") ~ ('\x00'..'\x26' | '\x28'..'\xFF')* ~ ("'")) | (("\"") ~ ('\x00'..'\x21' | '\x23'..'\xFF')* ~ ("\"")) }
 
 token = @{ (alpha | special) ~ (alpha | digit | special)+ }
-variable_declaration = { "let" ~ token ~ assignment_operator ~ math }
+variable_declaration = { "let" ~ token ~ ":" ~ token ~ assignment_operator ~ math }
 
 function_args = { (math ~ ",")* ~ math }
 function_call = { token ~ "(" ~ function_args? ~ ")" }
@@ -34,7 +34,13 @@ else_statement = { "else" ~ "{" ~ body* ~ "}" }
 while_loop = { "while" ~ "(" ~ expression ~ ")" ~ "{" ~ body* ~ "}" }
 for_loop = { "for" ~ "(" ~ expression ~ ")" ~ "{" ~ body* ~ "}" }
 
-line = _{ expression ~ ";" }
-body = _{ if_statement | while_loop | for_loop | line }
+function_declaration_args = { (token ~ ":" ~ token ~ ",")*  ~ token ~ ":" ~ token }
+function = { "function" ~ token ~ "(" ~ function_declaration_args? ~ ")" ~ (":" ~ token)? ~ "{" ~ body* ~ "}" }
+
+return_statement = { "return" ~ math }
+loop_control = { "break" | "continue" }
+
+line = _{ (loop_control ~ ";") | (return_statement ~ ";") | (expression ~ ";") }
+body = _{ function | if_statement | while_loop | for_loop | line }
 
 program = _{ SOI ~ body+ ~ EOI }
