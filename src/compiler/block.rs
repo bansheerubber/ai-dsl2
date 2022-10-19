@@ -1,47 +1,46 @@
 use llvm_sys::core::*;
 use llvm_sys::prelude::*;
-use std::{ rc::Rc, cell::RefCell };
 
 use crate::compiler::Module;
 
 #[derive(Debug)]
 pub struct Block {
 	block: LLVMBasicBlockRef,
-	module: Rc<RefCell<Module>>,
 }
 
-impl Block {
-	pub fn new(module: Rc<RefCell<Module>>, name: &str, value: LLVMValueRef) -> Self {
+impl Module {
+	pub fn new_block(&mut self, name: &str, value: LLVMValueRef) -> Block {
 		let block;
 		unsafe {
-			let mut module_mut = module.borrow_mut();
 			block = LLVMAppendBasicBlockInContext(
-				module_mut.get_context(),
+				self.get_context(),
 				value,
-				module_mut.string_table.to_llvm_string(name)
+				self.string_table.to_llvm_string(name)
 			);
-			LLVMPositionBuilderAtEnd(module_mut.get_builder(), block);
+			LLVMPositionBuilderAtEnd(self.get_builder(), block);
 		}
 
 		Block {
 			block,
-			module,
 		}
 	}
 
-	pub fn add_function_call(&self, name: &str, args: &mut [LLVMValueRef]) {
-		let mut module = self.module.borrow_mut();
-		let function = module.function_table.get_function(name).unwrap();
+	pub fn seek_to_block(&self, block: &Block) {
 		unsafe {
-			LLVMPositionBuilderAtEnd(module.get_builder(), self.block);
+			LLVMPositionBuilderAtEnd(self.get_builder(), block.block);
+		}
+	}
 
+	pub fn add_function_call(&mut self, name: &str, args: &mut [LLVMValueRef]) {
+		let function = self.function_table.get_function(name).unwrap();
+		unsafe {
 			LLVMBuildCall2(
-				module.get_builder(),
-				function.borrow().return_type,
-				function.borrow().function,
+				self.get_builder(),
+				function.return_type,
+				function.function,
 				args.as_mut_ptr(),
 				args.len() as u32,
-				module.string_table.to_llvm_string("") // TODO what is this for?
+				self.string_table.to_llvm_string("") // TODO what is this for?
 			);
 		}
 	}

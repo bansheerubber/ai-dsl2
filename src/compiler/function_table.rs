@@ -1,56 +1,53 @@
+use llvm_sys::core::*;
 use llvm_sys::prelude::*;
-use std::{ collections::HashMap, rc::Rc, cell::RefCell };
+use std::collections::HashMap;
 
-use crate::compiler::{ Block, Module };
+use crate::compiler::{ Block, Module, Type };
 
 #[derive(Debug)]
 pub struct Function {
-	block: Option<Block>,
+	pub block: Block,
 	pub function: LLVMValueRef,
-	module: Rc<RefCell<Module>>,
 	pub name: String,
 	pub return_type: LLVMTypeRef,
 }
 
-impl Function {
-	fn create_block(&mut self) {
-		if let None = self.block {
-			self.block = Some(Block::new(self.module.clone(), &self.name, self.function));
+impl Module {
+	pub fn create_function(&mut self, name: &str, arg_types: &Vec<Type>, return_type: Type) {
+		let mut arguments = Vec::new();
+		for &arg_type in arg_types {
+			arguments.push(self.to_llvm_type(arg_type));
 		}
-	}
 
-	pub fn get_block(&mut self) -> &Block {
-		self.create_block();
-		&self.block.as_ref().unwrap()
-	}
+		let function_type;
+		let function;
+		unsafe {
+			function_type = LLVMFunctionType(self.to_llvm_type(return_type), arguments.as_mut_ptr(), arguments.len() as u32, 0);
+			function = LLVMAddFunction(self.get_module(), self.string_table.to_llvm_string(name), function_type);
+		}
 
-	pub fn get_block_mut(&mut self) -> &mut Block {
-		self.create_block();
-		self.block.as_mut().unwrap()
+		let function = Function {
+			block: self.new_block(name, function),
+			function,
+			name: String::from(name),
+			return_type: function_type,
+		};
+
+		self.function_table.add_function(name, function);
 	}
 }
 
 #[derive(Debug, Default)]
 pub struct FunctionTable {
-	functions: HashMap<String, Rc<RefCell<Function>>>,
+	functions: HashMap<String, Function>,
 }
 
 impl FunctionTable {
-	pub fn add_function(&mut self, module: Rc<RefCell<Module>>, name: &str, function: LLVMValueRef, return_type: LLVMTypeRef) {
-		self.functions.insert(String::from(name), Rc::new(RefCell::new(Function {
-			block: None,
-			function,
-			module,
-			name: String::from(name),
-			return_type,
-		})));
+	pub fn add_function(&mut self, name: &str, function: Function) {
+		self.functions.insert(String::from(name), function);
 	}
 
-	pub fn get_function(&self, name: &str) -> Option<Rc<RefCell<Function>>> {
-		if let Some(function) = self.functions.get(&String::from(name)) {
-			Some(function.clone())
-		} else {
-			return None;
-		}
+	pub fn get_function(&self, name: &str) -> Option<&Function> {
+		self.functions.get(&String::from(name))
 	}
 }
