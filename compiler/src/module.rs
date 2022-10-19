@@ -2,8 +2,8 @@ use llvm_sys::bit_writer::*;
 use llvm_sys::core::*;
 use llvm_sys::prelude::*;
 
-use crate::compiler::{ FunctionTable, Type };
-use crate::utility::strings::StringTable;
+use crate::{ FunctionTable, Type };
+use crate::strings::StringTable;
 
 #[derive(Debug)]
 pub struct Module {

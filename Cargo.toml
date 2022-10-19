@@ -1,11 +1,6 @@
-[package]
-name = "ai-dsl2"
-version = "0.1.0"
-edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-llvm-sys = "140.0.3"
-pest = "2.4.0"
-pest_derive = "2.4.0"
+[workspace]
+resolver = "2"
+members = [
+	"code_generator",
+	"compiler",
+]

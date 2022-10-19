@@ -12,12 +12,19 @@ dependencies = [
 ]
 
 [[package]]
-name = "ai-dsl2"
+name = "ai-dsl2-code-generator"
+version = "0.1.0"
+dependencies = [
+ "ai-dsl2-compiler",
+ "pest",
+ "pest_derive",
+]
+
+[[package]]
+name = "ai-dsl2-compiler"
 version = "0.1.0"
 dependencies = [
  "llvm-sys",
- "pest",
- "pest_derive",
 ]
 
 [[package]]

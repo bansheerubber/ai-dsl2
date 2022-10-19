@@ -2,7 +2,7 @@ use llvm_sys::core::*;
 use llvm_sys::prelude::*;
 use std::collections::HashMap;
 
-use crate::compiler::{ Block, Module, Type };
+use crate::{ Block, Module, Type };
 
 #[derive(Debug)]
 pub struct Function {

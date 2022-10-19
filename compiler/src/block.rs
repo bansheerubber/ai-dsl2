@@ -1,7 +1,7 @@
 use llvm_sys::core::*;
 use llvm_sys::prelude::*;
 
-use crate::compiler::Module;
+use crate::Module;
 
 #[derive(Debug)]
 pub struct Block {
