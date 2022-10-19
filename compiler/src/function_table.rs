@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use crate::{ Block, Module, Type };
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Function {
 	pub block: Block,
 	pub function: LLVMValueRef,
@@ -13,7 +13,7 @@ pub struct Function {
 }
 
 impl Module {
-	pub fn create_function(&mut self, name: &str, arg_types: &Vec<Type>, return_type: Type) {
+	pub fn create_function(&mut self, name: &str, arg_types: &Vec<Type>, return_type: Type) -> &Function {
 		let mut arguments = Vec::new();
 		for &arg_type in arg_types {
 			arguments.push(self.to_llvm_type(arg_type));
@@ -34,6 +34,8 @@ impl Module {
 		};
 
 		self.function_table.add_function(name, function);
+
+		self.function_table.get_function(name).unwrap()
 	}
 }
 

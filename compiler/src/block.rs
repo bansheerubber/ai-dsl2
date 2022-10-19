@@ -1,23 +1,27 @@
 use llvm_sys::core::*;
 use llvm_sys::prelude::*;
 
-use crate::Module;
+use crate::{ Builder, Module };
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct Block {
 	block: LLVMBasicBlockRef,
+}
+
+impl Block {
+	pub fn get_block(&self) -> LLVMBasicBlockRef {
+		self.block
+	}
 }
 
 impl Module {
 	pub fn new_block(&mut self, name: &str, value: LLVMValueRef) -> Block {
 		let block;
 		unsafe {
-			block = LLVMAppendBasicBlockInContext(
-				self.get_context(),
+			block = LLVMAppendBasicBlock(
 				value,
 				self.string_table.to_llvm_string(name)
 			);
-			LLVMPositionBuilderAtEnd(self.get_builder(), block);
 		}
 
 		Block {
@@ -25,17 +29,14 @@ impl Module {
 		}
 	}
 
-	pub fn seek_to_block(&self, block: &Block) {
-		unsafe {
-			LLVMPositionBuilderAtEnd(self.get_builder(), block.block);
-		}
-	}
-
 	pub fn add_function_call(&mut self, name: &str, args: &mut [LLVMValueRef]) {
 		let function = self.function_table.get_function(name).unwrap();
 		unsafe {
+			let builder = Builder::new();
+			builder.seek_to_end(function.block);
+
 			LLVMBuildCall2(
-				self.get_builder(),
+				builder.get_builder(),
 				function.return_type,
 				function.function,
 				args.as_mut_ptr(),

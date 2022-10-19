@@ -2,12 +2,11 @@ use llvm_sys::bit_writer::*;
 use llvm_sys::core::*;
 use llvm_sys::prelude::*;
 
-use crate::{ FunctionTable, Type };
+use crate::{ Block, Builder, FunctionTable, Type, Value };
 use crate::strings::StringTable;
 
 #[derive(Debug)]
 pub struct Module {
-	builder: LLVMBuilderRef,
 	context: LLVMContextRef,
 	pub function_table: FunctionTable,
 	module: LLVMModuleRef,
@@ -20,15 +19,12 @@ impl Module {
 
 		let context;
 		let module;
-		let builder;
 		unsafe {
 			context = LLVMContextCreate();
 			module = LLVMModuleCreateWithName(string_table.to_llvm_string(name));
-			builder = LLVMCreateBuilderInContext(context);
 		}
 
 		Module {
-			builder,
 			context,
 			function_table: FunctionTable::default(),
 			module,
@@ -40,12 +36,12 @@ impl Module {
 		unsafe {
 			match type_enum {
 				Type::CString => {
-					let i8_type = LLVMIntTypeInContext(self.context, 8);
+					let i8_type = LLVMIntType(8);
 					LLVMPointerType(i8_type, 0)
 				},
-				Type::Float => LLVMDoubleTypeInContext(self.context),
-				Type::Integer => LLVMIntTypeInContext(self.context, 64),
-				Type::Void => LLVMVoidTypeInContext(self.context),
+				Type::Float => LLVMDoubleType(),
+				Type::Integer => LLVMIntType(64),
+				Type::Void => LLVMVoidType(),
 			}
 		}
 	}
@@ -56,19 +52,27 @@ impl Module {
 		}
 	}
 
-	pub fn create_global_string(&mut self, string: &str) -> LLVMValueRef {
+	pub fn create_global_string(&mut self, block: Block, string: &str) -> LLVMValueRef {
 		unsafe {
+			let builder = Builder::new();
+			builder.seek_to_end(block);
+
 			// TODO for this to not seg fault, we need to have the builder positioned at the end of a block? what if its positioned anywhere?
 			LLVMBuildGlobalStringPtr(
-				self.builder,
+				builder.get_builder(),
 				self.string_table.to_llvm_string(string),
 				self.string_table.to_llvm_string("") // TODO what is this for?
 			)
 		}
 	}
 
-	pub fn get_builder(&self) -> LLVMBuilderRef {
-		self.builder
+	pub fn add_return(&mut self, block: Block, value: Value) {
+		unsafe {
+			let builder = Builder::new();
+			builder.seek_to_end(block);
+
+			LLVMBuildRet(builder.get_builder(), value.value);
+		}
 	}
 
 	pub fn get_context(&self) -> LLVMContextRef {
@@ -83,7 +87,6 @@ impl Module {
 impl Drop for Module {
 	fn drop(&mut self) {
 		unsafe {
-			LLVMDisposeBuilder(self.builder);
 			LLVMDisposeModule(self.module);
 			LLVMContextDispose(self.context);
 		}
