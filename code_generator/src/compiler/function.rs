@@ -1,14 +1,13 @@
-use ai_dsl2_compiler::Module;
 use pest::iterators::Pair;
 
-use crate::compiler::compile_pairs;
+use crate::compiler::{ CompilationContext, compile_pairs };
 use crate::parser;
 use crate::types::convert_type_name;
 
 pub struct Function;
 
 impl Function {
-	pub fn compile(module: &mut Module, pair: Pair<parser::Rule>) {
+	pub fn compile(context: &mut CompilationContext, pair: Pair<parser::Rule>) {
 		let mut name = "";
 		let mut return_type = "";
 
@@ -23,8 +22,10 @@ impl Function {
 			}
 		}
 
-		module.create_function(name, &vec![], convert_type_name(return_type));
+		context.current_block = Some(
+			context.module.create_function(name, &vec![], convert_type_name(return_type)).block
+		);
 
-		compile_pairs(module, pairs.last().unwrap().into_inner());
+		compile_pairs(context, pairs.last().unwrap().into_inner());
 	}
 }

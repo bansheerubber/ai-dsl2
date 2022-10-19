@@ -3,7 +3,3 @@ function main(): int {
 
 	return 0;
 }
-
-function test(): string {
-	return "hey there";
-}

@@ -5,6 +5,7 @@ pub mod math;
 pub mod module;
 pub mod types;
 pub mod utility;
+pub mod variables;
 
 pub use block::Block;
 pub use builder::Builder;
@@ -13,3 +14,4 @@ pub use math::Value;
 pub use module::Module;
 pub use types::Type;
 pub use utility::strings;
+pub use variables::VariableTable;

@@ -2,7 +2,7 @@ use llvm_sys::bit_writer::*;
 use llvm_sys::core::*;
 use llvm_sys::prelude::*;
 
-use crate::{ Block, Builder, FunctionTable, Type, Value };
+use crate::{ Block, Builder, FunctionTable, Type, Value, VariableTable, };
 use crate::strings::StringTable;
 
 #[derive(Debug)]
@@ -11,6 +11,7 @@ pub struct Module {
 	pub function_table: FunctionTable,
 	module: LLVMModuleRef,
 	pub string_table: StringTable, // keep the strings alive for as long as we are using LLVM resources
+	pub variable_table: VariableTable,
 }
 
 impl Module {
@@ -29,6 +30,7 @@ impl Module {
 			function_table: FunctionTable::default(),
 			module,
 			string_table,
+			variable_table: VariableTable::default(),
 		}
 	}
 

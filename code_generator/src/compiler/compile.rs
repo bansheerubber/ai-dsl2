@@ -1,29 +1,37 @@
-use ai_dsl2_compiler::Module;
+use ai_dsl2_compiler::{ Block, Module };
 use pest::iterators::{ Pair, Pairs };
 
-use crate::compiler::Function;
+use crate::compiler::{ Function, VariableDeclaration };
 use crate::parser;
 
-pub fn compile_pair(module: &mut Module, pair: Pair<parser::Rule>) {
+pub struct CompilationContext {
+	pub current_block: Option<Block>,
+	pub module: Module,
+}
+
+pub fn compile_pair(context: &mut CompilationContext, pair: Pair<parser::Rule>) {
 	match pair.as_rule() {
 		parser::Rule::function => {
-			Function::compile(module, pair);
+			Function::compile(context, pair);
+		},
+		parser::Rule::math => {
+			println!("math not implemented");
 		},
 		parser::Rule::return_statement => {
 			println!("return statement not implemented");
 		},
 		parser::Rule::variable_declaration => {
-			println!("variable declaration not implemented");
+			VariableDeclaration::compile(context, pair);
 		},
 		parser::Rule::EOI => {
 			println!("end of input");
 		}
-		_ => todo!(),
+		rule => todo!("{:?} not implemented", rule),
 	}
 }
 
-pub fn compile_pairs(module: &mut Module, pairs: Pairs<'_, parser::Rule>) {
+pub fn compile_pairs(context: &mut CompilationContext, pairs: Pairs<'_, parser::Rule>) {
 	for pair in pairs {
-		compile_pair(module, pair);
+		compile_pair(context, pair);
 	}
 }

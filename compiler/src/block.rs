@@ -3,7 +3,7 @@ use llvm_sys::prelude::*;
 
 use crate::{ Builder, Module };
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct Block {
 	block: LLVMBasicBlockRef,
 }
