@@ -8,7 +8,7 @@ special = _{ "_" }
 
 integer = @{ (non_zero_digit ~ digit+) | digit }
 float = @{ digit+ ~ "." ~ digit+ }
-number = _{ integer | float }
+number = _{ float | integer }
 string_literal = @{ (("'") ~ ('\x00'..'\x26' | '\x28'..'\xFF')* ~ ("'")) | (("\"") ~ ('\x00'..'\x21' | '\x23'..'\xFF')* ~ ("\"")) }
 
 token = @{ (alpha | special) ~ (alpha | digit | special)+ }
