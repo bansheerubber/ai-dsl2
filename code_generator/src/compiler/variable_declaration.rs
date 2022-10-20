@@ -29,10 +29,11 @@ impl VariableDeclaration {
 		}
 
 		println!("{} {}", variable_name, variable_type);
-		context.module.add_immutable_variable(
+		let variable = context.module.add_immutable_variable(
 			context.current_block.unwrap(), variable_name, convert_type_name(variable_type)
 		);
 
-		compile_pair(context, pairs.last().unwrap());
+		let value = compile_pair(context, pairs.last().unwrap()).unwrap();
+		context.module.add_store(context.current_block.unwrap(), variable, value);
 	}
 }
