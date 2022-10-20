@@ -15,10 +15,9 @@ impl Module {
 			let builder = Builder::new();
 			builder.seek_to_end(block);
 
-			let lhs = self.resolve_value(block, lhs);
-			let rhs = self.resolve_value(block, rhs);
-
 			let result_type = self.math_type_aliasing(lhs.type_enum, rhs.type_enum)?;
+			let lhs = self.math_resolve_value(block, lhs, result_type);
+			let rhs = self.math_resolve_value(block, rhs, result_type);
 
 			let value = match result_type {
 				Type::Float => LLVMBuildFAdd(
@@ -48,10 +47,9 @@ impl Module {
 			let builder = Builder::new();
 			builder.seek_to_end(block);
 
-			let lhs = self.resolve_value(block, lhs);
-			let rhs = self.resolve_value(block, rhs);
-
 			let result_type = self.math_type_aliasing(lhs.type_enum, rhs.type_enum)?;
+			let lhs = self.math_resolve_value(block, lhs, result_type);
+			let rhs = self.math_resolve_value(block, rhs, result_type);
 
 			let value = match result_type {
 				Type::Float => LLVMBuildFSub(
@@ -81,10 +79,9 @@ impl Module {
 			let builder = Builder::new();
 			builder.seek_to_end(block);
 
-			let lhs = self.resolve_value(block, lhs);
-			let rhs = self.resolve_value(block, rhs);
-
 			let result_type = self.math_type_aliasing(lhs.type_enum, rhs.type_enum)?;
+			let lhs = self.math_resolve_value(block, lhs, result_type);
+			let rhs = self.math_resolve_value(block, rhs, result_type);
 
 			let value = match result_type {
 				Type::Float => LLVMBuildFMul(
@@ -177,6 +174,57 @@ impl Module {
 					}
 				},
 				_ => value,
+			}
+		}
+	}
+
+	pub fn math_resolve_value(&mut self, block: Block, value: Value, result_type: Type) -> Value {
+		let resolved = self.resolve_value(block, value);
+		self.convert_to_type(block, resolved, result_type)
+	}
+
+	pub fn convert_to_type(&mut self, block: Block, value: Value, result_type: Type) -> Value {
+		unsafe {
+			let builder = Builder::new();
+			builder.seek_to_end(block);
+
+			if value.type_enum == result_type {
+				return value;
+			}
+
+			let value = match value.type_enum {
+				Type::Float => {
+					match result_type {
+						Type::Integer => {
+							LLVMBuildFPToUI(
+								builder.get_builder(),
+								value.value,
+								self.to_llvm_type(Type::Integer),
+								self.string_table.to_llvm_string("t")
+							)
+						},
+						_ => todo!(),
+					}
+				},
+				Type::Integer => {
+					match result_type {
+						Type::Float => {
+							LLVMBuildUIToFP(
+								builder.get_builder(),
+								value.value,
+								self.to_llvm_type(Type::Float),
+								self.string_table.to_llvm_string("t")
+							)
+						},
+						_ => todo!(),
+					}
+				},
+				_ => todo!(),
+			};
+
+			Value {
+				type_enum: result_type,
+				value,
 			}
 		}
 	}
