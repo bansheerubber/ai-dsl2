@@ -23,6 +23,8 @@ impl Math {
 			})
 			.map_infix(|lhs, op, rhs| match op.as_rule() {
 				parser::Rule::addition  => reference2.borrow_mut().module.add_addition(current_block, lhs, rhs),
+				parser::Rule::multiplication  => reference2.borrow_mut().module.add_multiplication(current_block, lhs, rhs),
+				parser::Rule::subtraction  => reference2.borrow_mut().module.add_subtraction(current_block, lhs, rhs),
 				_ => todo!(),
 			})
 			.parse(pair.into_inner());
