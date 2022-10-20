@@ -15,6 +15,8 @@ impl Module {
 			let builder = Builder::new();
 			builder.seek_to_end(block);
 
+			let lhs = self.resolve_value(block, lhs);
+			let rhs = self.resolve_value(block, rhs);
 			Value {
 				type_enum: Type::Integer,
 				value: LLVMBuildAdd(
@@ -22,6 +24,44 @@ impl Module {
 					lhs.value,
 					rhs.value,
 					self.string_table.to_llvm_string("addtmp")
+				),
+			}
+		}
+	}
+
+	pub fn add_subtraction(&mut self, block: Block, lhs: Value, rhs: Value) -> Value {
+		unsafe {
+			let builder = Builder::new();
+			builder.seek_to_end(block);
+
+			let lhs = self.resolve_value(block, lhs);
+			let rhs = self.resolve_value(block, rhs);
+			Value {
+				type_enum: Type::Integer,
+				value: LLVMBuildSub(
+					builder.get_builder(),
+					lhs.value,
+					rhs.value,
+					self.string_table.to_llvm_string("subtmp")
+				),
+			}
+		}
+	}
+
+	pub fn add_multiplication(&mut self, block: Block, lhs: Value, rhs: Value) -> Value {
+		unsafe {
+			let builder = Builder::new();
+			builder.seek_to_end(block);
+
+			let lhs = self.resolve_value(block, lhs);
+			let rhs = self.resolve_value(block, rhs);
+			Value {
+				type_enum: Type::Integer,
+				value: LLVMBuildMul(
+					builder.get_builder(),
+					lhs.value,
+					rhs.value,
+					self.string_table.to_llvm_string("multmp")
 				),
 			}
 		}
