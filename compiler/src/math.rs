@@ -36,11 +36,54 @@ impl Module {
 		}
 	}
 
+	pub fn add_global_int(&mut self, block: Block, number: u64) -> Value {
+		unsafe {
+			let builder = Builder::new();
+			builder.seek_to_end(block);
+
+			let global = LLVMAddGlobal(
+				self.get_module(),
+				self.to_llvm_type(Type::Integer),
+				self.string_table.to_llvm_string(&format!("c{}", number))
+			);
+
+			LLVMSetInitializer(global, LLVMConstInt(self.to_llvm_type(Type::Integer), number, 0));
+
+			Value {
+				type_enum: Type::IntegerPointer,
+				value: global,
+			}
+		}
+	}
+
 	pub fn create_immediate_float(&self, number: f64) -> Value {
 		unsafe {
 			Value {
 				type_enum: Type::Float,
 				value: LLVMConstReal(self.to_llvm_type(Type::Float), number),
+			}
+		}
+	}
+
+	// resolves pointers into temporary variables
+	pub fn resolve_value(&mut self, block: Block, value: Value) -> Value {
+		unsafe {
+			let builder = Builder::new();
+			builder.seek_to_end(block);
+
+			match value.type_enum {
+				Type::IntegerPointer => {
+					Value {
+						type_enum: Type::Integer,
+						value: LLVMBuildLoad2(
+							builder.get_builder(),
+							self.to_llvm_type(Type::Integer),
+							value.value,
+							self.string_table.to_llvm_string("t")
+						),
+					}
+				},
+				_ => value,
 			}
 		}
 	}

@@ -3,6 +3,7 @@ pub enum Type {
 	CString,
 	Float,
 	Integer,
+	IntegerPointer,
 	#[default]
 	Void,
 }

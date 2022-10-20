@@ -43,6 +43,7 @@ impl Module {
 				},
 				Type::Float => LLVMDoubleType(),
 				Type::Integer => LLVMIntType(64),
+				Type::IntegerPointer => LLVMPointerType(LLVMIntType(64), 64),
 				Type::Void => LLVMVoidType(),
 			}
 		}

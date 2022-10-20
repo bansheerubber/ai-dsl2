@@ -82,6 +82,7 @@ impl Module {
 			let builder = Builder::new();
 			builder.seek_to_end(block);
 
+			let value = self.resolve_value(block, value);
 			Value {
 				type_enum: Type::Void,
 				value: LLVMBuildStore(builder.get_builder(), value.value, location.value),
