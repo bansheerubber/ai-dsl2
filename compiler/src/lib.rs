@@ -12,6 +12,7 @@ pub use builder::Builder;
 pub use function_table::FunctionTable;
 pub use math::Value;
 pub use module::Module;
+pub use types::MathError;
 pub use types::Type;
 pub use utility::strings;
 pub use variables::VariableTable;

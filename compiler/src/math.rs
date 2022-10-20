@@ -1,7 +1,7 @@
 use llvm_sys::core::*;
 use llvm_sys::prelude::*;
 
-use crate::{ Block, Builder, Module, Type };
+use crate::{ Block, Builder, MathError, Module, Type };
 
 #[derive(Clone, Copy, Debug)]
 pub struct Value {
@@ -10,60 +10,113 @@ pub struct Value {
 }
 
 impl Module {
-	pub fn add_addition(&mut self, block: Block, lhs: Value, rhs: Value) -> Value {
+	pub fn add_addition(&mut self, block: Block, lhs: Value, rhs: Value) -> Result<Value, MathError> {
 		unsafe {
 			let builder = Builder::new();
 			builder.seek_to_end(block);
 
 			let lhs = self.resolve_value(block, lhs);
 			let rhs = self.resolve_value(block, rhs);
-			Value {
-				type_enum: Type::Integer,
-				value: LLVMBuildAdd(
+
+			let result_type = self.math_type_aliasing(lhs.type_enum, rhs.type_enum)?;
+
+			let value = match result_type {
+				Type::Float => LLVMBuildFAdd(
+					builder.get_builder(),
+					lhs.value,
+					rhs.value,
+					self.string_table.to_llvm_string("addftmp")
+				),
+				Type::Integer => LLVMBuildAdd(
 					builder.get_builder(),
 					lhs.value,
 					rhs.value,
 					self.string_table.to_llvm_string("addtmp")
 				),
-			}
+				_ => return Err(MathError::UnsupportedOperation)
+			};
+
+			Ok(Value {
+				type_enum: result_type,
+				value,
+			})
 		}
 	}
 
-	pub fn add_subtraction(&mut self, block: Block, lhs: Value, rhs: Value) -> Value {
+	pub fn add_subtraction(&mut self, block: Block, lhs: Value, rhs: Value) -> Result<Value, MathError> {
 		unsafe {
 			let builder = Builder::new();
 			builder.seek_to_end(block);
 
 			let lhs = self.resolve_value(block, lhs);
 			let rhs = self.resolve_value(block, rhs);
-			Value {
-				type_enum: Type::Integer,
-				value: LLVMBuildSub(
+
+			let result_type = self.math_type_aliasing(lhs.type_enum, rhs.type_enum)?;
+
+			let value = match result_type {
+				Type::Float => LLVMBuildFSub(
+					builder.get_builder(),
+					lhs.value,
+					rhs.value,
+					self.string_table.to_llvm_string("subftmp")
+				),
+				Type::Integer => LLVMBuildSub(
 					builder.get_builder(),
 					lhs.value,
 					rhs.value,
 					self.string_table.to_llvm_string("subtmp")
 				),
-			}
+				_ => return Err(MathError::UnsupportedOperation)
+			};
+
+			Ok(Value {
+				type_enum: result_type,
+				value,
+			})
 		}
 	}
 
-	pub fn add_multiplication(&mut self, block: Block, lhs: Value, rhs: Value) -> Value {
+	pub fn add_multiplication(&mut self, block: Block, lhs: Value, rhs: Value) -> Result<Value, MathError> {
 		unsafe {
 			let builder = Builder::new();
 			builder.seek_to_end(block);
 
 			let lhs = self.resolve_value(block, lhs);
 			let rhs = self.resolve_value(block, rhs);
-			Value {
-				type_enum: Type::Integer,
-				value: LLVMBuildMul(
+
+			let result_type = self.math_type_aliasing(lhs.type_enum, rhs.type_enum)?;
+
+			let value = match result_type {
+				Type::Float => LLVMBuildFMul(
+					builder.get_builder(),
+					lhs.value,
+					rhs.value,
+					self.string_table.to_llvm_string("mulftmp")
+				),
+				Type::Integer => LLVMBuildMul(
 					builder.get_builder(),
 					lhs.value,
 					rhs.value,
 					self.string_table.to_llvm_string("multmp")
 				),
-			}
+				_ => return Err(MathError::UnsupportedOperation)
+			};
+
+			Ok(Value {
+				type_enum: result_type,
+				value,
+			})
+		}
+	}
+
+	pub fn math_type_aliasing(&self, type1: Type, type2: Type) -> Result<Type, MathError> {
+		if type1 == type2 {
+			Ok(type1)
+		}
+		else if type1 == Type::Float || type2 == Type::Float {
+			Ok(Type::Float)
+		} else {
+			Err(MathError::IncompatibleTypes)
 		}
 	}
 
