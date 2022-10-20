@@ -5,6 +5,7 @@ use crate::{ Block, Builder, Module, Type, Value };
 
 #[derive(Debug, Default)]
 pub struct Variable {
+	type_enum: Type,
 	is_mutable: bool,
 	name: String,
 }
@@ -29,6 +30,7 @@ impl Module {
 		self.variable_table.add(
 			block,
 			Variable {
+				type_enum: Type::Void,
 				is_mutable: false,
 				name: String::from(name),
 			}
@@ -40,6 +42,7 @@ impl Module {
 			builder.seek_to_end(block);
 
 			Value {
+				type_enum: Type::Void,
 				value: LLVMBuildAlloca(
 					builder.get_builder(),
 					self.to_llvm_type(type_enum),
@@ -53,6 +56,7 @@ impl Module {
 		self.variable_table.add(
 			block,
 			Variable {
+				type_enum: Type::Void,
 				is_mutable: true,
 				name: String::from(name),
 			}
@@ -63,6 +67,7 @@ impl Module {
 			builder.seek_to_end(block);
 
 			Value {
+				type_enum: Type::Void,
 				value: LLVMBuildAlloca(
 					builder.get_builder(),
 					self.to_llvm_type(type_enum),

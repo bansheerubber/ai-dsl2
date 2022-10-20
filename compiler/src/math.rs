@@ -5,6 +5,7 @@ use crate::{ Block, Builder, Module, Type };
 
 #[derive(Clone, Copy, Debug)]
 pub struct Value {
+	pub type_enum: Type,
 	pub value: LLVMValueRef,
 }
 
@@ -15,6 +16,7 @@ impl Module {
 			builder.seek_to_end(block);
 
 			Value {
+				type_enum: Type::Integer,
 				value: LLVMBuildAdd(
 					builder.get_builder(),
 					lhs.value,
@@ -28,6 +30,7 @@ impl Module {
 	pub fn create_immediate_int(&self, number: u64) -> Value {
 		unsafe {
 			Value {
+				type_enum: Type::Integer,
 				value: LLVMConstInt(self.to_llvm_type(Type::Integer), number, 0),
 			}
 		}
