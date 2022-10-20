@@ -31,6 +31,6 @@ impl VariableDeclaration {
 		);
 
 		let value = compile_pair(context, pairs.last().unwrap()).unwrap();
-		context.module.add_store(context.current_block.unwrap(), variable, value);
+		context.module.add_store(context.current_block.unwrap(), variable, value).unwrap();
 	}
 }

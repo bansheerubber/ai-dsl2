@@ -1,5 +1,5 @@
 function main(): int {
-	let frog: int = 5 + 10 * 2;
+	let frog: float = 5 + 2.51;
 
 	return 0;
 }
