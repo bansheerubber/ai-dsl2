@@ -14,8 +14,6 @@ pub struct VariableMetadata {
 
 impl VariableDeclaration {
 	pub fn compile(context: &mut CompilationContext, pair: Pair<parser::Rule>) {
-		println!("{:?}", pair);
-
 		let mut variable_name = "";
 		let mut variable_type = "";
 
@@ -28,7 +26,6 @@ impl VariableDeclaration {
 			}
 		}
 
-		println!("{} {}", variable_name, variable_type);
 		let variable = context.module.add_immutable_variable(
 			context.current_block.unwrap(), variable_name, convert_type_name(variable_type)
 		);
