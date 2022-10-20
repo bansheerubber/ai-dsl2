@@ -19,8 +19,30 @@ function_args = { (math ~ ",")* ~ math }
 function_call = { token ~ "(" ~ function_args? ~ ")" }
 
 assignment_operator = { "=" | "+=" | "-=" | "*=" | "/=" | "&&=" | "||=" | "&=" | "|=" | "^=" }
-binary_operator = { "+" | "-" | "*" | "/" | "&&" | "||" | "&" | "|" | "^" | ">" | "<" | ">=" | "<=" | "==" | "!=" }
-unary_operator = { "-" | "!" | "#" }
+
+addition = { "+" }
+subtraction = { "-" }
+multiplication = { "*" }
+division = { "/" }
+logical_and = { "&&" }
+logical_or = { "||" }
+bitwise_and = { "&" }
+bitwise_or = { "|" }
+bitwise_xor = { "^" }
+greater_than = { ">" }
+less_than = { "<" }
+greater_than_equal_to = { ">=" }
+less_than_equal_to = { "<=" }
+double_equals = { "==" }
+not_equals = { "!=" }
+
+binary_operator = _{ addition | subtraction | multiplication | division | logical_and | logical_or | bitwise_and | bitwise_or | bitwise_xor | greater_than | less_than | greater_than_equal_to | less_than_equal_to | double_equals | not_equals }
+
+negative = { "-" }
+logical_not = { "!" }
+bitwise_not = { "~" }
+learned_value = { "~" }
+unary_operator = { negative | logical_not | bitwise_not | learned_value }
 
 operand = _{ number | string_literal | function_call | token }
 primary = _{ operand | ( "(" ~ math ~ ")") }

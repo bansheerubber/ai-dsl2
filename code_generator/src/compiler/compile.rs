@@ -2,11 +2,12 @@ use ai_dsl2_compiler::{ Block, Module };
 use pest::iterators::{ Pair, Pairs };
 
 use crate::compiler::{ Function, VariableDeclaration };
-use crate::parser;
+use crate::parser::{ self, DSLParser };
 
-pub struct CompilationContext {
+pub struct CompilationContext<'a> {
 	pub current_block: Option<Block>,
 	pub module: Module,
+	pub parser: DSLParser<'a>,
 }
 
 pub fn compile_pair(context: &mut CompilationContext, pair: Pair<parser::Rule>) {
