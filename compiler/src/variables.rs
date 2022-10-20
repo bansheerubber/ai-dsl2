@@ -76,4 +76,16 @@ impl Module {
 			}
 		}
 	}
+
+	pub fn add_store(&mut self, block: Block, location: Value, value: Value) -> Value {
+		unsafe {
+			let builder = Builder::new();
+			builder.seek_to_end(block);
+
+			Value {
+				type_enum: Type::Void,
+				value: LLVMBuildStore(builder.get_builder(), value.value, location.value),
+			}
+		}
+	}
 }
