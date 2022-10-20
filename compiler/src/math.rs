@@ -35,4 +35,13 @@ impl Module {
 			}
 		}
 	}
+
+	pub fn create_immediate_float(&self, number: f64) -> Value {
+		unsafe {
+			Value {
+				type_enum: Type::Float,
+				value: LLVMConstReal(self.to_llvm_type(Type::Float), number),
+			}
+		}
+	}
 }
