@@ -106,6 +106,27 @@ impl Module {
 		}
 	}
 
+	pub fn add_division(&mut self, block: Block, lhs: Value, rhs: Value) -> Result<Value, MathError> {
+		unsafe {
+			let builder = Builder::new();
+			builder.seek_to_end(block);
+
+			let lhs = self.math_resolve_value(block, lhs, Type::Float(0));
+			let rhs = self.math_resolve_value(block, rhs, Type::Float(0));
+
+			let value = LLVMBuildFDiv(
+				builder.get_builder(),
+				lhs.value,
+				rhs.value,
+				self.string_table.to_llvm_string("divtmp")
+			);
+
+			Ok(Value {
+				type_enum: Type::Float(0),
+				value,
+			})
+		}
+	}
 	pub fn math_type_aliasing(&self, type1: Type, type2: Type) -> Result<Type, MathError> {
 		if let Type::Integer(_, bits1) = type1 {
 			if let Type::Integer(_, bits2) = type2 {
