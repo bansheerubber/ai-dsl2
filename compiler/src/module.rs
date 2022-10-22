@@ -37,14 +37,16 @@ impl Module {
 	pub fn to_llvm_type(&self, type_enum: Type) -> LLVMTypeRef {
 		unsafe {
 			match type_enum {
-				Type::CString => {
+				Type::CString(0) => {
 					let i8_type = LLVMIntType(8);
 					LLVMPointerType(i8_type, 0)
 				},
-				Type::Float => LLVMDoubleType(),
-				Type::Integer => LLVMIntType(64),
-				Type::IntegerPointer => LLVMPointerType(LLVMIntType(64), 64),
+				Type::Float(0) => LLVMDoubleType(),
+				Type::Float(1) => LLVMPointerType(LLVMDoubleType(), 64),
+				Type::Integer(0, bits) => LLVMIntType(bits),
+				Type::Integer(1, bits) => LLVMPointerType(LLVMIntType(bits), 64),
 				Type::Void => LLVMVoidType(),
+				_ => LLVMVoidType(),
 			}
 		}
 	}

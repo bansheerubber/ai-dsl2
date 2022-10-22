@@ -42,7 +42,7 @@ impl Module {
 			builder.seek_to_end(block);
 
 			Value {
-				type_enum: Type::Void, // TODO upgrade to pointer?
+				type_enum: self.upgrade_type(type_enum),
 				value: LLVMBuildAlloca(
 					builder.get_builder(),
 					self.to_llvm_type(type_enum),
@@ -67,7 +67,7 @@ impl Module {
 			builder.seek_to_end(block);
 
 			Value {
-				type_enum: Type::Void, // TODO upgrade to pointer?
+				type_enum: self.upgrade_type(type_enum),
 				value: LLVMBuildAlloca(
 					builder.get_builder(),
 					self.to_llvm_type(type_enum),
@@ -82,10 +82,9 @@ impl Module {
 			let builder = Builder::new();
 			builder.seek_to_end(block);
 
-			let value = self.resolve_value(block, value);
-
-			if value.type_enum != location.type_enum {
-				return Err(MathError::IncompatibleTypes);
+			let value = self.math_resolve_value(block, value, location.type_enum); // resolve & convert type
+			if value.type_enum != self.downgrade_type(location.type_enum) {
+				return Err(MathError::IncompatibleTypes(location.type_enum, value.type_enum));
 			}
 
 			Ok(Value {
