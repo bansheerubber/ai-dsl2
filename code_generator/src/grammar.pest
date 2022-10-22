@@ -42,7 +42,7 @@ negative = { "-" }
 logical_not = { "!" }
 bitwise_not = { "~" }
 learned_value = { "#" }
-unary_operator = { negative | logical_not | bitwise_not | learned_value }
+unary_operator = _{ negative | logical_not | bitwise_not | learned_value }
 
 operand = _{ number | string_literal | function_call | token }
 primary = _{ operand | ( "(" ~ math ~ ")") }
