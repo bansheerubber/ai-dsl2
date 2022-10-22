@@ -314,6 +314,78 @@ impl Module {
 			})
 		}
 	}
+
+	pub fn add_bitwise_not(&mut self, block: Block, value: Value) -> Result<Value, MathError> {
+		unsafe {
+			let builder = Builder::new();
+			builder.seek_to_end(block);
+
+			let result_type = value.type_enum.zero_pointer_number();
+
+			if result_type.zero_pointer_number().zero_bits() != Type::Integer(0, 0) {
+				return Err(MathError::UnsupportedOperation)
+			}
+
+			let value = self.math_resolve_value(block, value, result_type);
+
+			let value = match result_type {
+				Type::Integer(0, bits) => LLVMBuildXor(
+					builder.get_builder(),
+					LLVMConstInt(self.to_llvm_type(Type::Integer(0, bits)), 0xFFFF_FFFF_FFFF_FFFF, 0), // input tied high
+					value.value,
+					self.string_table.to_llvm_string("xortmp")
+				),
+				_ => return Err(MathError::UnsupportedOperation)
+			};
+
+			Ok(Value {
+				type_enum: result_type,
+				value,
+			})
+		}
+	}
+
+	pub fn add_logical_not(&mut self, block: Block, value: Value) -> Result<Value, MathError> {
+		match value.type_enum {
+			Type::Float(_) =>
+				self.add_compare(block, value, self.create_immediate_float(0.0), CompareOperation::Equals),
+			Type::Integer(_, _) =>
+				self.add_compare(block, value, self.create_immediate_integer(0), CompareOperation::Equals),
+			_ => Err(MathError::UnsupportedOperation)
+		}
+	}
+
+	pub fn add_negate(&mut self, block: Block, value: Value) -> Result<Value, MathError> {
+		unsafe {
+			let builder = Builder::new();
+			builder.seek_to_end(block);
+
+			let result_type = value.type_enum.zero_pointer_number();
+			let value = self.math_resolve_value(block, value, result_type);
+
+			let value = match result_type {
+				Type::Float(0) => LLVMBuildFSub(
+					builder.get_builder(),
+					LLVMConstReal(self.to_llvm_type(Type::Float(0)), 0.0),
+					value.value,
+					self.string_table.to_llvm_string("subftmp")
+				),
+				Type::Integer(0, bits) => LLVMBuildSub(
+					builder.get_builder(),
+					LLVMConstInt(self.to_llvm_type(Type::Integer(0, bits)), 0, 0),
+					value.value,
+					self.string_table.to_llvm_string("subtmp")
+				),
+				_ => return Err(MathError::UnsupportedOperation)
+			};
+
+			Ok(Value {
+				type_enum: result_type,
+				value,
+			})
+		}
+	}
+
 	pub fn math_type_aliasing(&self, type1: Type, type2: Type) -> Result<Type, MathError> {
 		if let Type::Integer(_, bits1) = type1 {
 			if let Type::Integer(_, bits2) = type2 {
