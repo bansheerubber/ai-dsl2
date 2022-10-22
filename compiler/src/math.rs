@@ -1,3 +1,4 @@
+use llvm_sys::*;
 use llvm_sys::core::*;
 use llvm_sys::prelude::*;
 
@@ -7,6 +8,15 @@ use crate::{ Block, Builder, MathError, Module, Type };
 pub struct Value {
 	pub type_enum: Type,
 	pub value: LLVMValueRef,
+}
+
+enum CompareOperation {
+	Equals,
+	GreaterThan,
+	GreaterThanEqualTo,
+	LessThan,
+	LessThanEqualTo,
+	NotEquals,
 }
 
 impl Module {
@@ -126,6 +136,90 @@ impl Module {
 				value,
 			})
 		}
+	}
+
+	fn get_float_compare_enum(&self, operation: CompareOperation) -> LLVMRealPredicate {
+		// TODO what is ordered vs unordered?
+		match operation {
+			CompareOperation::Equals => LLVMRealPredicate::LLVMRealOEQ,
+			CompareOperation::GreaterThan => LLVMRealPredicate::LLVMRealOGT,
+			CompareOperation::GreaterThanEqualTo => LLVMRealPredicate::LLVMRealOGE,
+			CompareOperation::LessThan => LLVMRealPredicate::LLVMRealOLT,
+			CompareOperation::LessThanEqualTo => LLVMRealPredicate::LLVMRealOLE,
+			CompareOperation::NotEquals => LLVMRealPredicate::LLVMRealONE,
+		}
+	}
+
+	fn get_integer_compare_enum(&self, operation: CompareOperation) -> LLVMIntPredicate {
+		// TODO unsigned int problems
+		match operation {
+			CompareOperation::Equals => LLVMIntPredicate::LLVMIntEQ,
+			CompareOperation::GreaterThan => LLVMIntPredicate::LLVMIntUGT,
+			CompareOperation::GreaterThanEqualTo => LLVMIntPredicate::LLVMIntUGE,
+			CompareOperation::LessThan => LLVMIntPredicate::LLVMIntULT,
+			CompareOperation::LessThanEqualTo => LLVMIntPredicate::LLVMIntULE,
+			CompareOperation::NotEquals => LLVMIntPredicate::LLVMIntNE,
+		}
+	}
+
+	fn add_compare(
+		&mut self, block: Block, lhs: Value, rhs: Value, operation: CompareOperation
+	) -> Result<Value, MathError> {
+		unsafe {
+			let builder = Builder::new();
+			builder.seek_to_end(block);
+
+			let common_type = self.math_type_aliasing(lhs.type_enum, rhs.type_enum)?;
+			let lhs = self.math_resolve_value(block, lhs, common_type);
+			let rhs = self.math_resolve_value(block, rhs, common_type);
+
+			let value = Value {
+				type_enum: Type::Integer(0, 1),
+				value: match common_type {
+					Type::Float(_) => LLVMBuildFCmp(
+						builder.get_builder(),
+						self.get_float_compare_enum(operation),
+						lhs.value,
+						rhs.value,
+						self.string_table.to_llvm_string("fcmplt")
+					),
+					Type::Integer(_, 64) => LLVMBuildICmp(
+						builder.get_builder(),
+						self.get_integer_compare_enum(operation),
+						lhs.value,
+						rhs.value,
+						self.string_table.to_llvm_string("icmplt")
+					),
+					_ => return Err(MathError::UnsupportedOperation)
+				}
+			};
+
+			Ok(value)
+		}
+	}
+
+	pub fn add_less_than(&mut self, block: Block, lhs: Value, rhs: Value) -> Result<Value, MathError> {
+		self.add_compare(block, lhs, rhs, CompareOperation::LessThan)
+	}
+
+	pub fn add_greater_than(&mut self, block: Block, lhs: Value, rhs: Value) -> Result<Value, MathError> {
+		self.add_compare(block, lhs, rhs, CompareOperation::GreaterThan)
+	}
+
+	pub fn add_less_than_equal_to(&mut self, block: Block, lhs: Value, rhs: Value) -> Result<Value, MathError> {
+		self.add_compare(block, lhs, rhs, CompareOperation::LessThanEqualTo)
+	}
+
+	pub fn add_greater_than_equal_to(&mut self, block: Block, lhs: Value, rhs: Value) -> Result<Value, MathError> {
+		self.add_compare(block, lhs, rhs, CompareOperation::GreaterThanEqualTo)
+	}
+
+	pub fn add_equals(&mut self, block: Block, lhs: Value, rhs: Value) -> Result<Value, MathError> {
+		self.add_compare(block, lhs, rhs, CompareOperation::Equals)
+	}
+
+	pub fn add_not_equals(&mut self, block: Block, lhs: Value, rhs: Value) -> Result<Value, MathError> {
+		self.add_compare(block, lhs, rhs, CompareOperation::NotEquals)
 	}
 	pub fn math_type_aliasing(&self, type1: Type, type2: Type) -> Result<Type, MathError> {
 		if let Type::Integer(_, bits1) = type1 {
