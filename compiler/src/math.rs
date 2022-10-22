@@ -221,6 +221,99 @@ impl Module {
 	pub fn add_not_equals(&mut self, block: Block, lhs: Value, rhs: Value) -> Result<Value, MathError> {
 		self.add_compare(block, lhs, rhs, CompareOperation::NotEquals)
 	}
+
+	pub fn add_bitwise_and(&mut self, block: Block, lhs: Value, rhs: Value) -> Result<Value, MathError> {
+		unsafe {
+			let builder = Builder::new();
+			builder.seek_to_end(block);
+
+			let result_type = self.math_type_aliasing(lhs.type_enum, rhs.type_enum)?;
+
+			if result_type.zero_pointer_number().zero_bits() != Type::Integer(0, 0) {
+				return Err(MathError::UnsupportedOperation)
+			}
+
+			let lhs = self.math_resolve_value(block, lhs, result_type);
+			let rhs = self.math_resolve_value(block, rhs, result_type);
+
+			let value = match result_type {
+				Type::Integer(0, _) => LLVMBuildAnd(
+					builder.get_builder(),
+					lhs.value,
+					rhs.value,
+					self.string_table.to_llvm_string("and")
+				),
+				_ => return Err(MathError::UnsupportedOperation)
+			};
+
+			Ok(Value {
+				type_enum: result_type,
+				value,
+			})
+		}
+	}
+
+	pub fn add_bitwise_or(&mut self, block: Block, lhs: Value, rhs: Value) -> Result<Value, MathError> {
+		unsafe {
+			let builder = Builder::new();
+			builder.seek_to_end(block);
+
+			let result_type = self.math_type_aliasing(lhs.type_enum, rhs.type_enum)?;
+
+			if result_type.zero_pointer_number().zero_bits() != Type::Integer(0, 0) {
+				return Err(MathError::UnsupportedOperation)
+			}
+
+			let lhs = self.math_resolve_value(block, lhs, result_type);
+			let rhs = self.math_resolve_value(block, rhs, result_type);
+
+			let value = match result_type {
+				Type::Integer(0, _) => LLVMBuildOr(
+					builder.get_builder(),
+					lhs.value,
+					rhs.value,
+					self.string_table.to_llvm_string("ortmp")
+				),
+				_ => return Err(MathError::UnsupportedOperation)
+			};
+
+			Ok(Value {
+				type_enum: result_type,
+				value,
+			})
+		}
+	}
+
+	pub fn add_bitwise_xor(&mut self, block: Block, lhs: Value, rhs: Value) -> Result<Value, MathError> {
+		unsafe {
+			let builder = Builder::new();
+			builder.seek_to_end(block);
+
+			let result_type = self.math_type_aliasing(lhs.type_enum, rhs.type_enum)?;
+
+			if result_type.zero_pointer_number().zero_bits() != Type::Integer(0, 0) {
+				return Err(MathError::UnsupportedOperation)
+			}
+
+			let lhs = self.math_resolve_value(block, lhs, result_type);
+			let rhs = self.math_resolve_value(block, rhs, result_type);
+
+			let value = match result_type {
+				Type::Integer(0, _) => LLVMBuildXor(
+					builder.get_builder(),
+					lhs.value,
+					rhs.value,
+					self.string_table.to_llvm_string("xortmp")
+				),
+				_ => return Err(MathError::UnsupportedOperation)
+			};
+
+			Ok(Value {
+				type_enum: result_type,
+				value,
+			})
+		}
+	}
 	pub fn math_type_aliasing(&self, type1: Type, type2: Type) -> Result<Type, MathError> {
 		if let Type::Integer(_, bits1) = type1 {
 			if let Type::Integer(_, bits2) = type2 {
