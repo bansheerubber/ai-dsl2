@@ -5,7 +5,8 @@ use pest_derive::Parser;
 
 pub fn configure_pratt() -> PrattParser<Rule> {
 	PrattParser::new()
-		.op(Op::infix(Rule::logical_and, Assoc::Left) | Op::infix(Rule::logical_or, Assoc::Left))
+		.op(Op::infix(Rule::logical_or, Assoc::Left))
+		.op(Op::infix(Rule::logical_and, Assoc::Left))
 		.op(Op::infix(Rule::bitwise_and, Assoc::Left) | Op::infix(Rule::bitwise_or, Assoc::Left) | Op::infix(Rule::bitwise_xor, Assoc::Left))
 		.op(Op::infix(Rule::equals, Assoc::Left) | Op::infix(Rule::not_equals, Assoc::Left))
 		.op(Op::infix(Rule::less_than_equal_to, Assoc::Left) | Op::infix(Rule::greater_than_equal_to, Assoc::Left))
