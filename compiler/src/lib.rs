@@ -1,6 +1,7 @@
 pub mod block;
 pub mod builder;
 pub mod function_table;
+pub mod logic;
 pub mod math;
 pub mod module;
 pub mod types;
@@ -10,6 +11,8 @@ pub mod variables;
 pub use block::Block;
 pub use builder::Builder;
 pub use function_table::FunctionTable;
+pub use logic::LogicBlock;
+pub use logic::LogicOperation;
 pub use math::Value;
 pub use module::Module;
 pub use types::Bits;
