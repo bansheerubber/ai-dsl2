@@ -80,6 +80,15 @@ impl Module {
 		}
 	}
 
+	pub fn add_branch_if_true(&mut self, block: Block, value: Value, if_true: Block, if_false: Block) {
+		unsafe {
+			let builder = Builder::new();
+			builder.seek_to_end(block);
+
+			LLVMBuildCondBr(builder.get_builder(), value.value, if_true.get_block(), if_false.get_block());
+		}
+	}
+
 	pub fn get_context(&self) -> LLVMContextRef {
 		self.context
 	}
