@@ -1,7 +1,5 @@
-use ai_dsl2_compiler::{ LogicBlock, Value };
+use ai_dsl2_compiler::{ LogicOperation, Value };
 use pest::iterators::Pair;
-use std::cell::RefCell;
-use std::rc::Rc;
 
 use crate::compiler::CompilationContext;
 use crate::parser::{ self, configure_pratt };
@@ -13,10 +11,8 @@ enum MathIR {
 		value: String,
 	},
 	LogicOperation {
-		block: Option<LogicBlock>,
-		lhs: Box<MathIR>,
 		operation: parser::Rule,
-		rhs: Box<MathIR>,
+		values: Vec<Box<MathIR>>,
 	},
 	Operation {
 		lhs: Box<MathIR>,
@@ -49,11 +45,36 @@ impl Math {
 				_ => unreachable!(),
 			},
 			MathIR::LogicOperation {
-				block: _,
-				lhs: _,
-				operation: _,
-				rhs: _,
-			} => todo!(),
+				operation,
+				values,
+			} => {
+				let mut logic = context.module.new_logic_block(
+					context.current_block.unwrap(),
+					if operation == parser::Rule::logical_and {
+						LogicOperation::And
+					} else {
+						LogicOperation::Or
+					},
+					values.len()
+				);
+
+				let parent = context.current_block.unwrap().get_parent();
+
+				// add terminating instruction
+				context.module.add_branch(context.current_block.unwrap(), logic.get_current_block());
+
+				for value in values {
+					context.current_block = Some(logic.get_current_block());
+					let value = Math::preorder(context, value);
+					logic = context.module.add_logic(logic, value).unwrap();
+				}
+
+				let (value, block) = context.module.commit_logic_block(logic).unwrap();
+				context.current_block = Some(context.module.new_block("main", parent));
+				context.module.add_branch(block, context.current_block.unwrap()); // add terminating instruction for end of logic
+
+				value
+			},
 			MathIR::Operation {
 				lhs,
 				operation,
@@ -112,13 +133,20 @@ impl Math {
 					value,
 				})
 			)
-			.map_infix(|lhs, op, rhs| match op.as_rule() {
-				parser::Rule::logical_and | parser::Rule::logical_or => Box::new(MathIR::LogicOperation {
-					block: None,
-					lhs,
-					operation: op.as_rule(),
-					rhs,
-				}),
+			.map_infix(|mut lhs, op, rhs| match op.as_rule() {
+				parser::Rule::logical_and | parser::Rule::logical_or => {
+					if let MathIR::LogicOperation { operation, values } = lhs.as_mut() {
+						if operation == &op.as_rule() {
+							values.push(rhs);
+							return lhs;
+						}
+					}
+
+					Box::new(MathIR::LogicOperation {
+						operation: op.as_rule(),
+						values: vec![lhs, rhs],
+					})
+				},
 				operation => Box::new(MathIR::Operation {
 					lhs,
 					operation,
