@@ -181,14 +181,14 @@ impl Module {
 						self.get_float_compare_enum(operation),
 						lhs.value,
 						rhs.value,
-						self.string_table.to_llvm_string("fcmplt")
+						self.string_table.to_llvm_string("fcmp")
 					),
 					Type::Integer(_, 64) => LLVMBuildICmp(
 						builder.get_builder(),
 						self.get_integer_compare_enum(operation),
 						lhs.value,
 						rhs.value,
-						self.string_table.to_llvm_string("icmplt")
+						self.string_table.to_llvm_string("icmp")
 					),
 					_ => return Err(MathError::UnsupportedOperation)
 				}
