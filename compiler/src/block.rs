@@ -1,7 +1,7 @@
 use llvm_sys::core::*;
 use llvm_sys::prelude::*;
 
-use crate::{ Builder, Module };
+use crate::{ Builder, Module, };
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct Block {
@@ -11,6 +11,12 @@ pub struct Block {
 impl Block {
 	pub fn get_block(&self) -> LLVMBasicBlockRef {
 		self.block
+	}
+
+	pub fn get_parent(&self) -> LLVMValueRef {
+		unsafe {
+			LLVMGetBasicBlockParent(self.block)
+		}
 	}
 }
 
