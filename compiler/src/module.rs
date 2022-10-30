@@ -80,6 +80,15 @@ impl Module {
 		}
 	}
 
+	pub fn add_branch(&mut self, block: Block, target: Block) {
+		unsafe {
+			let builder = Builder::new();
+			builder.seek_to_end(block);
+
+			LLVMBuildBr(builder.get_builder(), target.get_block());
+		}
+	}
+
 	pub fn add_branch_if_true(&mut self, block: Block, value: Value, if_true: Block, if_false: Block) {
 		unsafe {
 			let builder = Builder::new();
