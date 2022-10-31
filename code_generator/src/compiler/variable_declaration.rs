@@ -26,7 +26,7 @@ impl VariableDeclaration {
 			}
 		}
 
-		let variable = context.module.add_immutable_variable(
+		let variable = context.module.add_mutable_variable(
 			context.current_block.unwrap(), variable_name, convert_type_name(variable_type)
 		);
 

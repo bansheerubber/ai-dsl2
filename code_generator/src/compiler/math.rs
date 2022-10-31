@@ -53,6 +53,7 @@ impl Math {
 			} => match kind {
 				parser::Rule::float => (context.module.create_immediate_float(value.parse::<f64>().unwrap()), None),
 				parser::Rule::integer => (context.module.create_immediate_integer(value.parse::<u64>().unwrap()), None),
+				parser::Rule::token => (context.module.get_variable(context.current_block.unwrap(), &value).unwrap(), None),
 				_ => unreachable!(),
 			},
 			MathIR::LogicOperation {
