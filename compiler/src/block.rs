@@ -1,7 +1,7 @@
 use llvm_sys::core::*;
 use llvm_sys::prelude::*;
 
-use crate::{ Builder, Module, };
+use crate::{ Builder, Module, strings };
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct Block {
@@ -18,20 +18,48 @@ impl Block {
 			LLVMGetBasicBlockParent(self.block)
 		}
 	}
+
+	pub fn get_name(&self) -> String {
+		unsafe {
+			strings::from_llvm_string(LLVMGetBasicBlockName(self.block))
+		}
+	}
 }
 
 impl Module {
 	pub fn new_block(&mut self, name: &str, value: LLVMValueRef) -> Block {
-		let block;
-		unsafe {
-			block = LLVMAppendBasicBlock(
-				value,
-				self.string_table.to_llvm_string(name)
-			);
+		Block {
+			block: unsafe {
+				LLVMAppendBasicBlock(
+					value,
+					self.string_table.to_llvm_string(name)
+				)
+			},
 		}
+	}
+
+	// modifies current block, returns reference to old block
+	pub fn split_block_in_place(&mut self, block: &mut Block) -> Block {
+		let name = block.get_name() + "cont";
+		let parent = block.get_parent();
+
+		let old_block = block.block;
+		*block = self.new_block(&name, parent);
 
 		Block {
-			block,
+			block: old_block,
+		}
+	}
+
+	pub fn move_block_after(&mut self, block: Block, position: Block) {
+		unsafe {
+			LLVMMoveBasicBlockAfter(block.get_block(), position.get_block());
+		}
+	}
+
+	pub fn move_block_before(&mut self, block: Block, position: Block) {
+		unsafe {
+			LLVMMoveBasicBlockAfter(block.get_block(), position.get_block());
 		}
 	}
 
