@@ -80,6 +80,15 @@ impl Module {
 		}
 	}
 
+	pub fn add_return_void(&mut self, block: Block) {
+		unsafe {
+			let builder = Builder::new();
+			builder.seek_to_end(block);
+
+			LLVMBuildRetVoid(builder.get_builder());
+		}
+	}
+
 	pub fn add_branch(&mut self, block: Block, target: Block) {
 		unsafe {
 			let builder = Builder::new();
