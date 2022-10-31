@@ -38,3 +38,12 @@ pub struct DSLParser<'a> {
 	pub pairs: Pairs<'a, Rule>,
 	pub pratt: PrattParser<Rule>,
 }
+
+impl DSLParser<'_> {
+	pub fn will_generate_block(&self, rule: Rule) -> bool {
+		match rule {
+			Rule::logical_not | Rule::logical_and => true,
+			_ => false,
+		}
+	}
+}
