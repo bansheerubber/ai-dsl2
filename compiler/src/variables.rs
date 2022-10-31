@@ -1,79 +1,104 @@
 use std::collections::HashMap;
 use llvm_sys::core::*;
+use llvm_sys::prelude::*;
 
 use crate::{ Block, Builder, MathError, Module, Type, Value };
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Variable {
 	type_enum: Type,
 	is_mutable: bool,
 	name: String,
+	value: Value,
 }
 
 #[derive(Debug, Default)]
 pub struct VariableTable {
-	variables: HashMap<Block, HashMap<String, Variable>>,
+	variables: HashMap<LLVMValueRef, HashMap<String, Variable>>,
 }
 
 impl VariableTable {
-	pub fn add(&mut self, block: Block, variable: Variable) {
-		if !self.variables.contains_key(&block) {
-			self.variables.insert(block, HashMap::new());
+	pub fn add(&mut self, function: LLVMValueRef, variable: Variable) {
+		if !self.variables.contains_key(&function) {
+			self.variables.insert(function, HashMap::new());
 		}
 
-		self.variables.get_mut(&block).unwrap().insert(variable.name.clone(), variable);
+		self.variables.get_mut(&function).unwrap().insert(variable.name.clone(), variable);
+	}
+
+	pub fn get(&mut self, function: LLVMValueRef, name: &str) -> Option<&Variable> {
+		if !self.variables.contains_key(&function) {
+			None
+		} else {
+			self.variables.get(&function).unwrap().get(name)
+		}
 	}
 }
 
 impl Module {
 	pub fn add_immutable_variable(&mut self, block: Block, name: &str, type_enum: Type) -> Value {
-		self.variable_table.add(
-			block,
-			Variable {
-				type_enum,
-				is_mutable: false,
-				name: String::from(name),
-			}
-		);
-
 		// TODO we're going to use the stack, even for immutable variables, for ease of design
 		unsafe {
 			let builder = Builder::new();
 			builder.seek_to_end(block);
 
-			Value {
+			let value = Value {
 				type_enum: self.upgrade_type(type_enum),
 				value: LLVMBuildAlloca(
 					builder.get_builder(),
 					self.to_llvm_type(type_enum),
 					self.string_table.to_llvm_string(name)
 				),
-			}
+			};
+
+			self.variable_table.add(
+				block.get_parent(),
+				Variable {
+					type_enum,
+					is_mutable: false,
+					name: String::from(name),
+					value,
+				}
+			);
+
+			return value;
 		}
 	}
 
 	pub fn add_mutable_variable(&mut self, block: Block, name: &str, type_enum: Type) -> Value {
-		self.variable_table.add(
-			block,
-			Variable {
-				type_enum,
-				is_mutable: true,
-				name: String::from(name),
-			}
-		);
-
 		unsafe {
 			let builder = Builder::new();
 			builder.seek_to_end(block);
 
-			Value {
+			let value = Value {
 				type_enum: self.upgrade_type(type_enum),
 				value: LLVMBuildAlloca(
 					builder.get_builder(),
 					self.to_llvm_type(type_enum),
 					self.string_table.to_llvm_string(name)
 				),
-			}
+			};
+
+
+			self.variable_table.add(
+				block.get_parent(),
+				Variable {
+					type_enum,
+					is_mutable: true,
+					name: String::from(name),
+					value,
+				}
+			);
+
+			return value;
+		}
+	}
+
+	pub fn get_variable(&mut self, block: Block, name: &str) -> Option<Value> {
+		if let Some(variable) = self.variable_table.get(block.get_parent(), name) {
+			Some(variable.value)
+		} else {
+			None
 		}
 	}
 
