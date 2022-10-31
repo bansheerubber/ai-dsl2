@@ -27,5 +27,7 @@ impl Function {
 		);
 
 		compile_pairs(context, pairs.last().unwrap().into_inner());
+
+		context.module.add_return_void(context.current_block.unwrap());
 	}
 }
