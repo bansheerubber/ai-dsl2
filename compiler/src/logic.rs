@@ -14,14 +14,21 @@ pub struct LogicBlock {
 	blocks: Vec<Block>,
 	block_index: usize,
 	end: Block,
-	last_value: Option<Value>,
 	operation: LogicOperation,
-	short: Block,
+	values: Vec<Value>,
 }
 
 impl LogicBlock {
 	pub fn get_current_block(&self) -> Block {
 		self.blocks[self.block_index]
+	}
+
+	pub fn get_current_block_ref(&self) -> &Block {
+		&self.blocks[self.block_index]
+	}
+
+	pub fn get_current_block_mut(&mut self) -> &mut Block {
+		&mut self.blocks[self.block_index]
 	}
 
 	pub fn get_next_block(&self) -> Option<Block> {
@@ -30,6 +37,14 @@ impl LogicBlock {
 		} else {
 			Some(self.blocks[self.block_index + 1])
 		}
+	}
+
+	pub fn get_first_block(&self) -> Block {
+		self.blocks[0]
+	}
+
+	pub fn get_end(&self) -> Block {
+		self.end
 	}
 }
 
@@ -40,28 +55,19 @@ impl Module {
 
 			let mut blocks = vec![];
 			for _ in 0..count {
-				blocks.push(self.new_block("logicstep", function));
+				blocks.push(self.new_block(&format!("logicstep_{:?}", operation), function));
 			}
 
-			let short = self.new_block("short", function);
 			let end = self.new_block("end", function);
 
 			LogicBlock {
 				blocks,
 				block_index: 0,
 				end,
-				last_value: None,
 				operation,
-				short,
+				values: vec![],
 			}
 		};
-
-		// build the short circuit block
-		unsafe {
-			let builder = Builder::new();
-			builder.seek_to_end(logic.short);
-			LLVMBuildBr(builder.get_builder(), logic.end.get_block());
-		}
 
 		return logic;
 	}
@@ -69,26 +75,28 @@ impl Module {
 	pub fn add_logic(&mut self, logic: LogicBlock, value: Value) -> Result<LogicBlock, MathError> {
 		let mut logic = logic;
 
-		// keep track of last_value so we can use the result of the logic operation in the end block
-		let compare = self.add_equals(
-			logic.get_current_block(),
-			value,
-			self.create_immediate_integer(
-				if let LogicOperation::And = logic.operation {
-					0
-				} else {
-					1
-				}
-			)
-		)?;
+		let compare = if let LogicOperation::And = logic.operation {
+			self.add_equals(
+				logic.get_current_block(),
+				value,
+				self.create_immediate_integer(0)
+			)?
+		} else {
+			self.add_not_equals(
+				logic.get_current_block(),
+				value,
+				self.create_immediate_integer(0)
+			)?
+		};
 
-		logic.last_value = Some(value);
+		// keep track of values so we can use the result of the logic operations in the end block
+		logic.values.push(value);
 
 		let builder = Builder::new();
 		builder.seek_to_end(logic.get_current_block());
 
 		if let Some(next_block) = logic.get_next_block() {
-			self.add_branch_if_true(logic.get_current_block(), compare, logic.short, next_block);
+			self.add_branch_if_true(logic.get_current_block(), compare, logic.end, next_block);
 		} else {
 			self.add_branch(logic.get_current_block(), logic.end);
 		}
@@ -110,14 +118,17 @@ impl Module {
 				self.string_table.to_llvm_string("phiend")
 			);
 
-			let mut incoming_values = vec![
-				LLVMConstInt(self.to_llvm_type(Type::Integer(0, 64)), 0, 0), // TODO handle type conversion
-				logic.last_value.unwrap().value // TODO handle type conversion
-			];
+			let mut incoming_values = Vec::new();
+			for value in logic.values {
+				incoming_values.push(value.value); // TODO handle type conversion
+			}
 
-			let mut incoming_blocks = vec![logic.short.get_block(), logic.blocks[logic.blocks.len() - 1].get_block()];
+			let mut incoming_blocks = Vec::new();
+			for block in logic.blocks {
+				incoming_blocks.push(block.get_block());
+			}
 
-			LLVMAddIncoming(phi, incoming_values.as_mut_ptr(), incoming_blocks.as_mut_ptr(), 2); // TODO is this gonna crash?
+			LLVMAddIncoming(phi, incoming_values.as_mut_ptr(), incoming_blocks.as_mut_ptr(), incoming_values.len() as u32);
 
 			Ok((
 				Value {
