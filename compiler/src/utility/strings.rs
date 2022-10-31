@@ -20,3 +20,15 @@ impl StringTable {
 		return pointer;
 	}
 }
+
+pub fn from_llvm_string(string: *const i8) -> String {
+	unsafe {
+		let mut output = String::new();
+		let mut index = 0;
+		while *string.offset(index) != 0 {
+			output.push((*string.offset(index) as u8) as char);
+			index += 1;
+		}
+		return output;
+	}
+}
