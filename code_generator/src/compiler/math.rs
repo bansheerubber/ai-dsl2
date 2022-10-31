@@ -1,4 +1,4 @@
-use ai_dsl2_compiler::{ LogicOperation, Value };
+use ai_dsl2_compiler::{ Block, LogicOperation, Value };
 use pest::iterators::Pair;
 
 use crate::compiler::CompilationContext;
@@ -25,23 +25,34 @@ enum MathIR {
 	},
 }
 
+impl MathIR {
+	pub fn get_operation(&self) -> Option<parser::Rule> {
+		match *self {
+			MathIR::Constant { kind: _, value: _, } => None,
+			MathIR::LogicOperation { operation, values: _, } => Some(operation),
+			MathIR::Operation { lhs: _, operation, rhs: _ } => Some(operation),
+			MathIR::UnaryOperation { operation, value: _ } => Some(operation),
+		}
+	}
+}
+
 pub struct Math;
 
 impl Math {
 	pub fn compile(context: &mut CompilationContext, pair: Pair<parser::Rule>) -> Value {
 		let math_ir = Math::_compile(pair);
 
-		Math::preorder(context, math_ir)
+		Math::preorder(context, math_ir).0
 	}
 
-	fn preorder(context: &mut CompilationContext, node: Box<MathIR>) -> Value {
+	fn preorder(context: &mut CompilationContext, node: Box<MathIR>) -> (Value, Option<(Block, Block)>) {
 		match *node {
 			MathIR::Constant {
 				kind,
 				value,
 			} => match kind {
-				parser::Rule::float => context.module.create_immediate_float(value.parse::<f64>().unwrap()),
-				parser::Rule::integer => context.module.create_immediate_integer(value.parse::<u64>().unwrap()),
+				parser::Rule::float => (context.module.create_immediate_float(value.parse::<f64>().unwrap()), None),
+				parser::Rule::integer => (context.module.create_immediate_integer(value.parse::<u64>().unwrap()), None),
 				_ => unreachable!(),
 			},
 			MathIR::LogicOperation {
@@ -58,62 +69,75 @@ impl Math {
 					values.len()
 				);
 
-				let parent = context.current_block.unwrap().get_parent();
-
 				// add terminating instruction
 				context.module.add_branch(context.current_block.unwrap(), logic.get_current_block());
 
 				for value in values {
 					context.current_block = Some(logic.get_current_block());
-					let value = Math::preorder(context, value);
+
+					let (value, blocks) = Math::preorder(context, value);
+
+					if let Some((first_block, end_block)) = blocks {
+						context.module.split_block_in_place(logic.get_current_block_mut());
+						context.current_block = Some(logic.get_current_block());
+						context.module.add_branch(end_block, context.current_block.unwrap());
+					}
+
 					logic = context.module.add_logic(logic, value).unwrap();
 				}
 
-				let (value, block) = context.module.commit_logic_block(logic).unwrap();
-				context.current_block = Some(context.module.new_block("main", parent));
-				context.module.add_branch(block, context.current_block.unwrap()); // add terminating instruction for end of logic
+				let first = logic.get_first_block();
 
-				value
+				let (value, end_block) = context.module.commit_logic_block(logic).unwrap();
+				context.current_block = Some(end_block);
+
+				(value, Some((first, end_block)))
 			},
 			MathIR::Operation {
 				lhs,
 				operation,
 				rhs,
 			} => {
-				let lhs = Math::preorder(context, lhs);
-				let rhs = Math::preorder(context, rhs);
+				let (lhs, _) = Math::preorder(context, lhs);
+				let (rhs, _) = Math::preorder(context, rhs);
 
 				let current_block = context.current_block.unwrap();
-				match operation {
-					parser::Rule::addition => context.module.add_addition(current_block, lhs, rhs).unwrap(),
-					parser::Rule::bitwise_and => context.module.add_bitwise_and(current_block, lhs, rhs).unwrap(),
-					parser::Rule::bitwise_or => context.module.add_bitwise_or(current_block, lhs, rhs).unwrap(),
-					parser::Rule::bitwise_xor => context.module.add_bitwise_xor(current_block, lhs, rhs).unwrap(),
-					parser::Rule::division => context.module.add_division(current_block, lhs, rhs).unwrap(),
-					parser::Rule::equals => context.module.add_equals(current_block, lhs, rhs).unwrap(),
-					parser::Rule::greater_than => context.module.add_greater_than(current_block, lhs, rhs).unwrap(),
-					parser::Rule::greater_than_equal_to => context.module.add_greater_than_equal_to(current_block, lhs, rhs).unwrap(),
-					parser::Rule::less_than => context.module.add_less_than(current_block, lhs, rhs).unwrap(),
-					parser::Rule::less_than_equal_to => context.module.add_less_than_equal_to(current_block, lhs, rhs).unwrap(),
-					parser::Rule::multiplication => context.module.add_multiplication(current_block, lhs, rhs).unwrap(),
-					parser::Rule::not_equals => context.module.add_not_equals(current_block, lhs, rhs).unwrap(),
-					parser::Rule::subtraction => context.module.add_subtraction(current_block, lhs, rhs).unwrap(),
-					rule => todo!("{:?} not implemented", rule),
-				}
+				(
+					match operation {
+						parser::Rule::addition => context.module.add_addition(current_block, lhs, rhs).unwrap(),
+						parser::Rule::bitwise_and => context.module.add_bitwise_and(current_block, lhs, rhs).unwrap(),
+						parser::Rule::bitwise_or => context.module.add_bitwise_or(current_block, lhs, rhs).unwrap(),
+						parser::Rule::bitwise_xor => context.module.add_bitwise_xor(current_block, lhs, rhs).unwrap(),
+						parser::Rule::division => context.module.add_division(current_block, lhs, rhs).unwrap(),
+						parser::Rule::equals => context.module.add_equals(current_block, lhs, rhs).unwrap(),
+						parser::Rule::greater_than => context.module.add_greater_than(current_block, lhs, rhs).unwrap(),
+						parser::Rule::greater_than_equal_to => context.module.add_greater_than_equal_to(current_block, lhs, rhs).unwrap(),
+						parser::Rule::less_than => context.module.add_less_than(current_block, lhs, rhs).unwrap(),
+						parser::Rule::less_than_equal_to => context.module.add_less_than_equal_to(current_block, lhs, rhs).unwrap(),
+						parser::Rule::multiplication => context.module.add_multiplication(current_block, lhs, rhs).unwrap(),
+						parser::Rule::not_equals => context.module.add_not_equals(current_block, lhs, rhs).unwrap(),
+						parser::Rule::subtraction => context.module.add_subtraction(current_block, lhs, rhs).unwrap(),
+						rule => todo!("{:?} not implemented", rule),
+					},
+					None
+				)
 			},
 			MathIR::UnaryOperation {
 				operation,
 				value,
 			} => {
-				let value = Math::preorder(context, value);
+				let (value, _) = Math::preorder(context, value);
 
 				let current_block = context.current_block.unwrap();
-				match operation {
-					parser::Rule::bitwise_not => context.module.add_bitwise_not(current_block, value).unwrap(),
-					parser::Rule::logical_not => context.module.add_logical_not(current_block, value).unwrap(),
-					parser::Rule::negative => context.module.add_negate(current_block, value).unwrap(),
-					rule => todo!("{:?} not implemented", rule),
-				}
+				(
+					match operation {
+						parser::Rule::bitwise_not => context.module.add_bitwise_not(current_block, value).unwrap(),
+						parser::Rule::logical_not => context.module.add_logical_not(current_block, value).unwrap(),
+						parser::Rule::negative => context.module.add_negate(current_block, value).unwrap(),
+						rule => todo!("{:?} not implemented", rule),
+					},
+					None
+				)
 			},
 		}
 	}
