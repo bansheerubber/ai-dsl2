@@ -39,8 +39,9 @@ impl Type {
 	}
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum MathError {
 	IncompatibleTypes(Type, Type),
+	UndefinedVariable(String),
 	UnsupportedOperation,
 }

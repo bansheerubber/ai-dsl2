@@ -94,11 +94,11 @@ impl Module {
 		}
 	}
 
-	pub fn get_variable(&mut self, block: Block, name: &str) -> Option<Value> {
+	pub fn get_variable(&mut self, block: Block, name: &str) -> Result<Value, MathError> {
 		if let Some(variable) = self.variable_table.get(block.get_parent(), name) {
-			Some(variable.value)
+			Ok(variable.value)
 		} else {
-			None
+			Err(MathError::UndefinedVariable(String::from(name)))
 		}
 	}
 
