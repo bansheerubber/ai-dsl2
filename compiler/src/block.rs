@@ -30,6 +30,15 @@ pub enum TerminalInstruction {
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct Block {
 	block: LLVMBasicBlockRef,
+
+	// blocks are not self-terminating. what this means is that the code_generator may compile a block, add all sorts of
+	// instructions to it, but not add a terminating instruction in the context the block was created in. whenever the
+	// next block in the same function is created by the code_generator, that new block has control over how the original
+	// block terminates.
+	//
+	// for compilation safety purposes, all blocks are created with a "return void" terminating instruction. this is only
+	// to assist with debugging, since the disassembler formats block locations incorrectly if blocks are not correctly
+	// terminated.
 	terminal: TerminalInstruction,
 }
 

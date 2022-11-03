@@ -45,17 +45,20 @@ impl Math {
 		Math::preorder(context, math_ir).0
 	}
 
-	fn preorder(context: &mut CompilationContext, node: Box<MathIR>) -> (Value, Option<(Block, Block)>) {
+	fn preorder(context: &mut CompilationContext, node: Box<MathIR>) -> (Value, Option<Block>) {
 		match *node {
 			MathIR::Constant {
 				kind,
 				value,
-			} => match kind {
-				parser::Rule::float => (context.module.create_immediate_float(value.parse::<f64>().unwrap()), None),
-				parser::Rule::integer => (context.module.create_immediate_integer(value.parse::<u64>().unwrap()), None),
-				parser::Rule::token => (context.module.get_variable(context.current_block.unwrap(), &value).unwrap(), None),
-				_ => unreachable!(),
-			},
+			} => (
+				match kind {
+					parser::Rule::float => context.module.create_immediate_float(value.parse::<f64>().unwrap()),
+					parser::Rule::integer => context.module.create_immediate_integer(value.parse::<u64>().unwrap()),
+					parser::Rule::token => context.module.get_variable(context.current_block.unwrap(), &value).unwrap(),
+					_ => unreachable!(),
+				},
+				None
+			),
 			MathIR::LogicOperation {
 				operation,
 				values,
@@ -70,29 +73,38 @@ impl Math {
 					values.len()
 				);
 
-				// add terminating instruction
+				// add terminating instruction to old current block, jumps into logic block for logic evaluation
 				context.module.add_branch(context.current_block.unwrap(), logic.get_current_block());
 
 				for value in values {
 					context.current_block = Some(logic.get_current_block());
 
-					let (value, blocks) = Math::preorder(context, value);
+					let (value, end_block) = Math::preorder(context, value);
 
-					if let Some((first_block, end_block)) = blocks {
+					// if the above compilation says that it generated block(s), then we need to stitch the blocks together to
+					// maintain correct control flow
+					if let Some(end_block) = end_block {
+						// split the current logic block. because of how blocks are compiled, the branch instruction into the
+						// preorder result's sequence of blocks has already been placed in the current logic block. please see
+						// `compiler/src/block.rs` for why
 						context.module.split_block_in_place(logic.get_current_block_mut());
+
+						// update the context's block with the "continued" block created by the split operation. subsequent logic
+						// operations will be appended to this block
 						context.current_block = Some(logic.get_current_block());
+
+						// set the terminating instruction of the preorder result's end block to jump straight into the "continued"
+						// block, so code flow behaves as expected
 						context.module.add_branch(end_block, context.current_block.unwrap());
 					}
 
 					logic = context.module.add_logic(logic, value).unwrap();
 				}
 
-				let first = logic.get_first_block();
-
 				let (value, end_block) = context.module.commit_logic_block(logic).unwrap();
 				context.current_block = Some(end_block);
 
-				(value, Some((first, end_block)))
+				(value, Some(end_block))
 			},
 			MathIR::Operation {
 				lhs,
@@ -101,9 +113,9 @@ impl Math {
 			} => {
 				let (lhs, _) = Math::preorder(context, lhs);
 				let (rhs, _) = Math::preorder(context, rhs);
-
 				let current_block = context.current_block.unwrap();
-				(
+
+				return (
 					match operation {
 						parser::Rule::addition => context.module.add_addition(current_block, lhs, rhs).unwrap(),
 						parser::Rule::bitwise_and => context.module.add_bitwise_and(current_block, lhs, rhs).unwrap(),
@@ -121,16 +133,16 @@ impl Math {
 						rule => todo!("{:?} not implemented", rule),
 					},
 					None
-				)
+				);
 			},
 			MathIR::UnaryOperation {
 				operation,
 				value,
 			} => {
 				let (value, _) = Math::preorder(context, value);
-
 				let current_block = context.current_block.unwrap();
-				(
+
+				return (
 					match operation {
 						parser::Rule::bitwise_not => context.module.add_bitwise_not(current_block, value).unwrap(),
 						parser::Rule::logical_not => context.module.add_logical_not(current_block, value).unwrap(),
@@ -138,7 +150,7 @@ impl Math {
 						rule => todo!("{:?} not implemented", rule),
 					},
 					None
-				)
+				);
 			},
 		}
 	}
