@@ -51,16 +51,16 @@ impl LogicBlock {
 impl Module {
 	pub fn new_logic_block(&mut self, parent: Block, operation: LogicOperation, count: usize) -> LogicBlock {
 		let logic = unsafe {
-			let function = LLVMGetBasicBlockParent(parent.get_block());
+			let function = self.function_table.get_function_by_ref(parent.get_parent()).unwrap();
 
 			let mut blocks = vec![];
 			for _ in 0..count {
 				blocks.push(
-					self.new_block_from_llvm_ref(&format!("logicstep_{:?}", operation), function)
+					self.new_block(&format!("logicstep_{:?}", operation), &function)
 				);
 			}
 
-			let end = self.new_block_from_llvm_ref("end", function);
+			let end = self.new_block("end", &function);
 
 			LogicBlock {
 				blocks,

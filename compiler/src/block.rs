@@ -27,19 +27,22 @@ pub enum TerminalInstruction {
 	},
 }
 
+impl TerminalInstruction {
+	pub fn get_instruction_ref(&self) -> LLVMValueRef {
+		match *self {
+			TerminalInstruction::ConditionalBranch { instruction, target_if_true: _, target_if_false: _, } => instruction,
+			TerminalInstruction::Branch { instruction, target: _, } => instruction,
+			TerminalInstruction::Return { instruction, value: _, } => instruction,
+			TerminalInstruction::ReturnVoid { instruction, } => instruction,
+			TerminalInstruction::None => panic!("Could not get terminal ref"),
+			TerminalInstruction::Unknown { instruction, } => instruction,
+		}
+	}
+}
+
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct Block {
 	block: LLVMBasicBlockRef,
-
-	// blocks are not self-terminating. what this means is that the code_generator may compile a block, add all sorts of
-	// instructions to it, but not add a terminating instruction in the context the block was created in. whenever the
-	// next block in the same function is created by the code_generator, that new block has control over how the original
-	// block terminates.
-	//
-	// for compilation safety purposes, all blocks are created with a "return void" terminating instruction. this is only
-	// to assist with debugging, since the disassembler formats block locations incorrectly if blocks are not correctly
-	// terminated.
-	terminal: TerminalInstruction,
 }
 
 impl Block {
@@ -58,17 +61,6 @@ impl Block {
 			strings::from_llvm_string(LLVMGetBasicBlockName(self.block))
 		}
 	}
-
-	pub fn get_terminal_ref(&self) -> LLVMValueRef {
-		match self.terminal {
-			TerminalInstruction::ConditionalBranch { instruction, target_if_true: _, target_if_false: _, } => instruction,
-			TerminalInstruction::Branch { instruction, target: _, } => instruction,
-			TerminalInstruction::Return { instruction, value: _, } => instruction,
-			TerminalInstruction::ReturnVoid { instruction, } => instruction,
-			TerminalInstruction::None => panic!("Could not get terminal ref"),
-			TerminalInstruction::Unknown { instruction, } => instruction,
-		}
-	}
 }
 
 impl Module {
@@ -76,7 +68,7 @@ impl Module {
 		let function = self.function_table.get_function_mut(&function).unwrap();
 
 		// had to inline function b/c non-lexical lifetimes do not extend through functions
-		let block = unsafe {
+		unsafe {
 			let block = LLVMAppendBasicBlock(
 				function.get_function(),
 				self.string_table.to_llvm_string(name)
@@ -86,38 +78,15 @@ impl Module {
 			LLVMPositionBuilderAtEnd(builder.get_builder(), block);
 			let instruction = LLVMBuildRetVoid(builder.get_builder());
 
-			Block {
+			let block = Block {
 				block,
-				terminal: TerminalInstruction::ReturnVoid {
-					instruction,
-				},
-			}
+			};
+
+			function.add_block(block);
+			function.set_block_terminal(block, TerminalInstruction::ReturnVoid { instruction, });
+
+			return block;
 		};
-
-		function.add_block(block);
-
-		return block;
-	}
-
-	pub(crate) fn new_block_from_llvm_ref(&mut self, name: &str, function: LLVMValueRef) -> Block {
-		// TODO generate terminating instruction
-		unsafe {
-			let block = LLVMAppendBasicBlock(
-				function,
-				self.string_table.to_llvm_string(name)
-			);
-
-			let builder = Builder::new();
-			LLVMPositionBuilderAtEnd(builder.get_builder(), block);
-			let instruction = LLVMBuildRetVoid(builder.get_builder());
-
-			Block {
-				block,
-				terminal: TerminalInstruction::ReturnVoid {
-					instruction,
-				},
-			}
-		}
 	}
 
 	// modifies current block, returns reference to old block
@@ -126,7 +95,8 @@ impl Module {
 		let parent = block.get_parent();
 
 		let old_block = block.clone();
-		*block = self.new_block_from_llvm_ref(&name, parent);
+
+		*block = self.new_block(&name, &self.function_table.get_function_by_ref(parent).unwrap());
 
 		return old_block;
 	}
@@ -145,17 +115,22 @@ impl Module {
 
 	pub(crate) fn set_block_terminal(&mut self, mut block: Block, terminal: TerminalInstruction) {
 		self.delete_block_terminal(block);
-		block.terminal = terminal;
+
+		let key = self.function_table.get_function_by_ref(block.get_parent()).unwrap();
+		self.function_table.get_function_mut(&key).unwrap().set_block_terminal(block, terminal);
 	}
 
 	pub(crate) fn delete_block_terminal(&mut self, mut block: Block) {
-		if block.terminal == TerminalInstruction::None {
+		let key = self.function_table.get_function_by_ref(block.get_parent()).unwrap();
+		let terminal = if let Some(terminal) = self.function_table.get_function_mut(&key).unwrap().get_block_terminal(block) {
+			terminal
+		} else {
 			return;
-		}
+		};
 
 		unsafe {
-			LLVMInstructionEraseFromParent(block.get_terminal_ref());
-			block.terminal = TerminalInstruction::None;
+			LLVMInstructionEraseFromParent(terminal.get_instruction_ref());
+			self.function_table.get_function_mut(&key).unwrap().delete_block_terminal(block);
 		}
 	}
 
