@@ -1,4 +1,4 @@
-use ai_dsl2_compiler::{ Block, LogicOperation, Value };
+use ai_dsl2_compiler::{ Block, LogicOperation, MathError, Value };
 use pest::iterators::Pair;
 
 use crate::compiler::CompilationContext;
@@ -25,40 +25,29 @@ enum MathIR {
 	},
 }
 
-impl MathIR {
-	pub fn get_operation(&self) -> Option<parser::Rule> {
-		match *self {
-			MathIR::Constant { kind: _, value: _, } => None,
-			MathIR::LogicOperation { operation, values: _, } => Some(operation),
-			MathIR::Operation { lhs: _, operation, rhs: _ } => Some(operation),
-			MathIR::UnaryOperation { operation, value: _ } => Some(operation),
-		}
-	}
-}
-
 pub struct Math;
 
 impl Math {
 	pub fn compile(context: &mut CompilationContext, pair: Pair<parser::Rule>) -> Value {
 		let math_ir = Math::_compile(pair);
 
-		Math::preorder(context, math_ir).0
+		Math::preorder(context, math_ir).unwrap().0
 	}
 
-	fn preorder(context: &mut CompilationContext, node: Box<MathIR>) -> (Value, Option<Block>) {
+	fn preorder(context: &mut CompilationContext, node: Box<MathIR>) -> Result<(Value, Option<Block>), MathError> {
 		match *node {
 			MathIR::Constant {
 				kind,
 				value,
-			} => (
+			} => {Ok((
 				match kind {
 					parser::Rule::float => context.module.create_immediate_float(value.parse::<f64>().unwrap()),
 					parser::Rule::integer => context.module.create_immediate_integer(value.parse::<u64>().unwrap()),
-					parser::Rule::token => context.module.get_variable(context.current_block.unwrap(), &value).unwrap(),
+					parser::Rule::token => context.module.get_variable(context.current_block.unwrap(), &value)?,
 					_ => unreachable!(),
 				},
 				None
-			),
+			))},
 			MathIR::LogicOperation {
 				operation,
 				values,
@@ -79,7 +68,7 @@ impl Math {
 				for value in values {
 					context.current_block = Some(logic.get_current_block());
 
-					let (value, end_block) = Math::preorder(context, value);
+					let (value, end_block) = Math::preorder(context, value)?;
 
 					// if the above compilation says that it generated block(s), then we need to stitch the blocks together to
 					// maintain correct control flow
@@ -104,18 +93,18 @@ impl Math {
 				let (value, end_block) = context.module.commit_logic_block(logic).unwrap();
 				context.current_block = Some(end_block);
 
-				(value, Some(end_block))
+				Ok((value, Some(end_block)))
 			},
 			MathIR::Operation {
 				lhs,
 				operation,
 				rhs,
 			} => {
-				let (lhs, _) = Math::preorder(context, lhs);
-				let (rhs, _) = Math::preorder(context, rhs);
+				let (lhs, _) = Math::preorder(context, lhs)?;
+				let (rhs, _) = Math::preorder(context, rhs)?;
 				let current_block = context.current_block.unwrap();
 
-				return (
+				return Ok((
 					match operation {
 						parser::Rule::addition => context.module.add_addition(current_block, lhs, rhs).unwrap(),
 						parser::Rule::bitwise_and => context.module.add_bitwise_and(current_block, lhs, rhs).unwrap(),
@@ -133,16 +122,16 @@ impl Math {
 						rule => todo!("{:?} not implemented", rule),
 					},
 					None
-				);
+				));
 			},
 			MathIR::UnaryOperation {
 				operation,
 				value,
 			} => {
-				let (value, _) = Math::preorder(context, value);
+				let (value, _) = Math::preorder(context, value)?;
 				let current_block = context.current_block.unwrap();
 
-				return (
+				return Ok((
 					match operation {
 						parser::Rule::bitwise_not => context.module.add_bitwise_not(current_block, value).unwrap(),
 						parser::Rule::logical_not => context.module.add_logical_not(current_block, value).unwrap(),
@@ -150,7 +139,7 @@ impl Math {
 						rule => todo!("{:?} not implemented", rule),
 					},
 					None
-				);
+				));
 			},
 		}
 	}
