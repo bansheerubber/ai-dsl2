@@ -18,7 +18,12 @@ impl Builder {
 
 	pub fn seek_to_end(&self, block: Block) {
 		unsafe {
-			LLVMPositionBuilderAtEnd(self.builder, block.get_block());
+			let terminator = LLVMGetBasicBlockTerminator(block.get_block());
+			if terminator.is_null() {
+				LLVMPositionBuilderAtEnd(self.builder, block.get_block());
+			} else {
+				LLVMPositionBuilderBefore(self.builder, LLVMGetBasicBlockTerminator(block.get_block()));
+			}
 		}
 	}
 
