@@ -9,6 +9,7 @@ fn main() {
 
 	let mut context = compiler::CompilationContext {
 		current_block: None,
+		current_function: None,
 		module: Module::new("main"),
 		parser: state.parse_file("test.ai"),
 	};

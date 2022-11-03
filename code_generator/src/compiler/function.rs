@@ -22,12 +22,14 @@ impl Function {
 			}
 		}
 
-		context.module.create_function(name, &vec![], convert_type_name(return_type));
+		context.current_function = Some(context.module.create_function(name, &vec![], convert_type_name(return_type)));
 		let block = context.module.new_block(name, &context.current_function.as_ref().unwrap());
 		context.current_block = Some(block);
 
 		compile_pairs(context, pairs.last().unwrap().into_inner());
 
 		context.module.add_return_void(context.current_block.unwrap());
+
+		context.current_function = None;
 	}
 }
