@@ -1,7 +1,7 @@
 use llvm_sys::core::*;
 use llvm_sys::prelude::*;
 
-use crate::{ Builder, Function, Module, strings };
+use crate::{ Builder, FunctionKey, Module, strings };
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum TerminalInstruction {
@@ -72,13 +72,31 @@ impl Block {
 }
 
 impl Module {
-	pub fn new_block(&mut self, name: &str, function: &Function) -> Block {
-		self.new_block_from_llvm_ref(name, function.get_function())
-	}
+	pub fn new_block(&mut self, name: &str, function: &FunctionKey) -> Block {
+		let function = self.function_table.get_function_mut(&function).unwrap();
 
-	pub fn new_block_in_function(&mut self, name: &str, function_name: &str) -> Block {
-		let function = self.function_table.get_function(function_name).unwrap();
-		self.new_block_from_llvm_ref(name, function.get_function())
+		// had to inline function b/c non-lexical lifetimes do not extend through functions
+		let block = unsafe {
+			let block = LLVMAppendBasicBlock(
+				function.get_function(),
+				self.string_table.to_llvm_string(name)
+			);
+
+			let builder = Builder::new();
+			LLVMPositionBuilderAtEnd(builder.get_builder(), block);
+			let instruction = LLVMBuildRetVoid(builder.get_builder());
+
+			Block {
+				block,
+				terminal: TerminalInstruction::ReturnVoid {
+					instruction,
+				},
+			}
+		};
+
+		function.add_block(block);
+
+		return block;
 	}
 
 	pub(crate) fn new_block_from_llvm_ref(&mut self, name: &str, function: LLVMValueRef) -> Block {
@@ -141,8 +159,8 @@ impl Module {
 		}
 	}
 
-	pub fn add_function_call(&mut self, block: Block, name: &str, args: &mut [LLVMValueRef]) {
-		let function = self.function_table.get_function(name).unwrap();
+	pub fn add_function_call(&mut self, block: Block, function: &FunctionKey, args: &mut [LLVMValueRef]) {
+		let function = self.function_table.get_function(&function).unwrap();
 		unsafe {
 			let builder = Builder::new();
 			builder.seek_to_end(block);

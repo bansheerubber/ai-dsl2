@@ -39,23 +39,36 @@ impl Module {
 			return_type: function_type,
 		};
 
-		self.function_table.add_function(name, function);
-
-		self.function_table.get_function(name).unwrap()
+		self.function_table.add_function(name, function)
 	}
+}
+
+#[derive(Clone, Debug, Default, Eq, Hash, PartialEq)]
+pub struct FunctionKey {
+	name: String,
 }
 
 #[derive(Debug, Default)]
 pub struct FunctionTable {
-	functions: HashMap<String, Function>,
+	functions: HashMap<FunctionKey, Function>,
 }
 
 impl FunctionTable {
-	pub fn add_function(&mut self, name: &str, function: Function) {
-		self.functions.insert(String::from(name), function);
+	pub fn add_function(&mut self, name: &str, function: Function) -> FunctionKey {
+		let key = FunctionKey {
+			name: String::from(name),
+		};
+
+		self.functions.insert(key.clone(), function);
+
+		return key;
 	}
 
-	pub fn get_function(&self, name: &str) -> Option<&Function> {
-		self.functions.get(&String::from(name))
+	pub fn get_function(&self, key: &FunctionKey) -> Option<&Function> {
+		self.functions.get(key)
+	}
+
+	pub fn get_function_mut(&mut self, key: &FunctionKey) -> Option<&mut Function> {
+		self.functions.get_mut(key)
 	}
 }
