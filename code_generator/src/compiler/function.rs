@@ -23,7 +23,7 @@ impl Function {
 		}
 
 		context.module.create_function(name, &vec![], convert_type_name(return_type));
-		let block = context.module.new_block_in_function(name, name);
+		let block = context.module.new_block(name, &context.current_function.as_ref().unwrap());
 		context.current_block = Some(block);
 
 		compile_pairs(context, pairs.last().unwrap().into_inner());
