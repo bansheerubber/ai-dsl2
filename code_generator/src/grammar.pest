@@ -1,5 +1,6 @@
 WHITESPACE_WITHOUT_NEWLINE = _{ " " | "\t" }
 WHITESPACE = _{ WHITESPACE_WITHOUT_NEWLINE | NEWLINE }
+COMMENT = _{ "//" ~ (!"\n" ~ ANY)* }
 
 alpha = _{ 'a'..'z' | 'A'..'Z' }
 non_zero_digit = _{ '1'..'9' }
@@ -50,9 +51,10 @@ math = { unary_operator? ~ primary ~ (binary_operator ~ unary_operator? ~ primar
 
 expression = _{ variable_declaration | math }
 
-if_statement = { "if" ~ "(" ~ expression ~ ")" ~ "{" ~ body* ~ "}" ~ else_if_statement* ~ else_statement? }
-else_if_statement = { "else if" ~ "(" ~ expression ~ ")" ~ "{" ~ body* ~ "}" }
-else_statement = { "else" ~ "{" ~ body* ~ "}" }
+if_statement_body = { body* }
+if_statement = { "if" ~ "(" ~ expression ~ ")" ~ "{" ~ if_statement_body ~ "}" ~ else_if_statement* ~ else_statement? }
+else_if_statement = { "else if" ~ "(" ~ expression ~ ")" ~ "{" ~ if_statement_body ~ "}" }
+else_statement = { "else" ~ "{" ~ if_statement_body ~ "}" }
 
 while_loop = { "while" ~ "(" ~ expression ~ ")" ~ "{" ~ body* ~ "}" }
 for_loop = { "for" ~ "(" ~ expression ~ ")" ~ "{" ~ body* ~ "}" }
