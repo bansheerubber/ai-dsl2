@@ -1,11 +1,12 @@
-use ai_dsl2_compiler::{ Block, Module, Value };
+use ai_dsl2_compiler::{ Block, FunctionKey, Module, Value };
 use pest::iterators::{ Pair, Pairs };
 
-use crate::compiler::{ Function, Math, VariableDeclaration };
+use crate::compiler::{ Function, IfStatement, Math, VariableDeclaration };
 use crate::parser::{ self, DSLParser };
 
 pub struct CompilationContext<'a> {
 	pub current_block: Option<Block>,
+	pub current_function: Option<FunctionKey>,
 	pub module: Module,
 	pub parser: DSLParser<'a>,
 }
@@ -16,6 +17,10 @@ pub fn compile_pair(context: &mut CompilationContext, pair: Pair<parser::Rule>) 
 			Function::compile(context, pair);
 			return None;
 		},
+		parser::Rule::if_statement => {
+			IfStatement::compile(context, pair);
+			return None;
+		}
 		parser::Rule::math => {
 			Some(Math::compile(context, pair))
 		},
