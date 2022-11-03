@@ -22,9 +22,9 @@ impl Function {
 			}
 		}
 
-		context.current_block = Some(
-			context.module.create_function(name, &vec![], convert_type_name(return_type)).block
-		);
+		context.module.create_function(name, &vec![], convert_type_name(return_type));
+		let block = context.module.new_block_in_function(name, name);
+		context.current_block = Some(block);
 
 		compile_pairs(context, pairs.last().unwrap().into_inner());
 
