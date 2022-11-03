@@ -9,7 +9,9 @@ pub mod utility;
 pub mod variables;
 
 pub use block::Block;
+pub use block::TerminalInstruction;
 pub use builder::Builder;
+pub use function_table::Function;
 pub use function_table::FunctionTable;
 pub use logic::LogicBlock;
 pub use logic::LogicOperation;

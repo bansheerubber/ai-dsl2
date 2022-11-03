@@ -55,10 +55,12 @@ impl Module {
 
 			let mut blocks = vec![];
 			for _ in 0..count {
-				blocks.push(self.new_block(&format!("logicstep_{:?}", operation), function));
+				blocks.push(
+					self.new_block_from_llvm_ref(&format!("logicstep_{:?}", operation), function)
+				);
 			}
 
-			let end = self.new_block("end", function);
+			let end = self.new_block_from_llvm_ref("end", function);
 
 			LogicBlock {
 				blocks,

@@ -6,10 +6,16 @@ use crate::{ Block, Module, Type };
 
 #[derive(Clone, Debug)]
 pub struct Function {
-	pub block: Block,
-	pub function: LLVMValueRef,
+	pub blocks: HashMap<LLVMBasicBlockRef, Block>,
+	function: LLVMValueRef,
 	pub name: String,
 	pub return_type: LLVMTypeRef,
+}
+
+impl Function {
+	pub fn get_function(&self) -> LLVMValueRef {
+		return self.function;
+	}
 }
 
 impl Module {
@@ -27,7 +33,7 @@ impl Module {
 		}
 
 		let function = Function {
-			block: self.new_block(name, function),
+			blocks: HashMap::new(),
 			function,
 			name: String::from(name),
 			return_type: function_type,

@@ -2,7 +2,7 @@ use llvm_sys::bit_writer::*;
 use llvm_sys::core::*;
 use llvm_sys::prelude::*;
 
-use crate::{ Block, Builder, FunctionTable, Type, Value, VariableTable, };
+use crate::{ Block, Builder, FunctionTable, TerminalInstruction, Type, Value, VariableTable, };
 use crate::strings::StringTable;
 
 #[derive(Debug)]
@@ -76,7 +76,13 @@ impl Module {
 			let builder = Builder::new();
 			builder.seek_to_end(block);
 
-			LLVMBuildRet(builder.get_builder(), value.value);
+			self.set_block_terminal(
+				block,
+				TerminalInstruction::Return {
+					instruction: LLVMBuildRet(builder.get_builder(), value.value),
+					value: value.value,
+				}
+			);
 		}
 	}
 
@@ -85,7 +91,12 @@ impl Module {
 			let builder = Builder::new();
 			builder.seek_to_end(block);
 
-			LLVMBuildRetVoid(builder.get_builder());
+			self.set_block_terminal(
+				block,
+				TerminalInstruction::ReturnVoid {
+					instruction: LLVMBuildRetVoid(builder.get_builder()),
+				}
+			);
 		}
 	}
 
@@ -94,7 +105,13 @@ impl Module {
 			let builder = Builder::new();
 			builder.seek_to_end(block);
 
-			LLVMBuildBr(builder.get_builder(), target.get_block());
+			self.set_block_terminal(
+				block,
+				TerminalInstruction::Branch {
+					instruction: LLVMBuildBr(builder.get_builder(), target.get_block()),
+					target: target.get_block(),
+				}
+			);
 		}
 	}
 
@@ -103,7 +120,15 @@ impl Module {
 			let builder = Builder::new();
 			builder.seek_to_end(block);
 
-			LLVMBuildCondBr(builder.get_builder(), value.value, if_true.get_block(), if_false.get_block());
+			let instruction = LLVMBuildCondBr(builder.get_builder(), value.value, if_true.get_block(), if_false.get_block());
+			self.set_block_terminal(
+				block,
+				TerminalInstruction::ConditionalBranch {
+					instruction,
+					target_if_false: if_false.get_block(),
+					target_if_true: if_true.get_block(),
+				}
+			);
 		}
 	}
 
