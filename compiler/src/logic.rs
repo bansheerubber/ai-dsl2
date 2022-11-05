@@ -50,28 +50,24 @@ impl LogicBlock {
 
 impl Module {
 	pub fn new_logic_block(&mut self, parent: Block, operation: LogicOperation, count: usize) -> LogicBlock {
-		let logic = unsafe {
-			let function = self.function_table.get_function_by_ref(parent.get_parent()).unwrap();
+		let function = self.function_table.get_function_by_ref(parent.get_parent()).unwrap();
 
-			let mut blocks = vec![];
-			for _ in 0..count {
-				blocks.push(
-					self.new_block(&format!("logicstep_{:?}", operation), &function)
-				);
-			}
+		let mut blocks = vec![];
+		for _ in 0..count {
+			blocks.push(
+				self.new_block(&format!("logicstep_{:?}", operation), &function)
+			);
+		}
 
-			let end = self.new_block("end", &function);
+		let end = self.new_block("end", &function);
 
-			LogicBlock {
-				blocks,
-				block_index: 0,
-				end,
-				operation,
-				values: vec![],
-			}
-		};
-
-		return logic;
+		LogicBlock {
+			blocks,
+			block_index: 0,
+			end,
+			operation,
+			values: vec![],
+		}
 	}
 
 	pub fn add_logic(&mut self, logic: LogicBlock, value: Value) -> Result<LogicBlock, MathError> {

@@ -113,14 +113,14 @@ impl Module {
 		}
 	}
 
-	pub(crate) fn set_block_terminal(&mut self, mut block: Block, terminal: TerminalInstruction) {
+	pub(crate) fn set_block_terminal(&mut self, block: Block, terminal: TerminalInstruction) {
 		self.delete_block_terminal(block);
 
 		let key = self.function_table.get_function_by_ref(block.get_parent()).unwrap();
 		self.function_table.get_function_mut(&key).unwrap().set_block_terminal(block, terminal);
 	}
 
-	pub(crate) fn delete_block_terminal(&mut self, mut block: Block) {
+	pub(crate) fn delete_block_terminal(&mut self, block: Block) {
 		let key = self.function_table.get_function_by_ref(block.get_parent()).unwrap();
 		let terminal = if let Some(terminal) = self.function_table.get_function_mut(&key).unwrap().get_block_terminal(block) {
 			terminal
