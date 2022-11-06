@@ -1,7 +1,7 @@
-use ai_dsl2_compiler::{ Block, FunctionKey, Module, Value };
-use pest::iterators::{ Pair, Pairs };
+use ai_dsl2_compiler::{ Block, FunctionKey, Module, Value, };
+use pest::iterators::{ Pair, Pairs, };
 
-use crate::compiler::{ Function, IfStatement, Math, VariableDeclaration };
+use crate::compiler::{ Function, IfStatement, Math, VariableAssignment, VariableDeclaration, };
 use crate::parser::{ self, DSLParser };
 
 pub struct CompilationContext<'a> {
@@ -27,6 +27,9 @@ pub fn compile_pair(context: &mut CompilationContext, pair: Pair<parser::Rule>) 
 		parser::Rule::return_statement => {
 			println!("return statement not implemented");
 			return None;
+		},
+		parser::Rule::variable_assignment => {
+			Some(VariableAssignment::compile(context, pair))
 		},
 		parser::Rule::variable_declaration => {
 			VariableDeclaration::compile(context, pair);

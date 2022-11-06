@@ -12,14 +12,15 @@ float = @{ digit+ ~ "." ~ digit+ }
 number = _{ float | integer }
 string_literal = @{ (("'") ~ ('\x00'..'\x26' | '\x28'..'\xFF')* ~ ("'")) | (("\"") ~ ('\x00'..'\x21' | '\x23'..'\xFF')* ~ ("\"")) }
 
-token = @{ (alpha | special) ~ (alpha | digit | special)+ }
-type_token = @{ (alpha | special) ~ (alpha | digit | special)+ }
+token = @{ (alpha | special) ~ (alpha | digit | special)* }
+type_token = @{ (alpha | special) ~ (alpha | digit | special)* }
 variable_declaration = { "let" ~ token ~ ":" ~ type_token ~ "=" ~ math }
 
 function_args = { (math ~ ",")* ~ math }
 function_call = { token ~ "(" ~ function_args? ~ ")" }
 
 assignment_operator = { "=" | "+=" | "-=" | "*=" | "/=" | "&&=" | "||=" | "&=" | "|=" | "^=" }
+variable_assignment = { token ~ assignment_operator ~ math }
 
 addition = { "+" }
 subtraction = { "-" }
@@ -49,7 +50,7 @@ operand = _{ number | string_literal | function_call | token }
 primary = _{ operand | ( "(" ~ math ~ ")") }
 math = { unary_operator? ~ primary ~ (binary_operator ~ unary_operator? ~ primary)* }
 
-expression = _{ variable_declaration | math }
+expression = _{ variable_declaration | variable_assignment | math }
 
 if_statement_body = { body* }
 if_statement = { "if" ~ "(" ~ expression ~ ")" ~ "{" ~ if_statement_body ~ "}" ~ else_if_statement* ~ else_statement? }
