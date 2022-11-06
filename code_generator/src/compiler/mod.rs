@@ -13,3 +13,4 @@ pub use control_flow::if_statement::IfStatement;
 pub use math::Math;
 pub use variable_assignment::VariableAssignment;
 pub use variable_declaration::VariableDeclaration;
+pub use loops::while_loop::WhileLoop;

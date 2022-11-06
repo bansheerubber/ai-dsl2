@@ -1,7 +1,7 @@
 use ai_dsl2_compiler::{ Block, FunctionKey, Module, Value, };
 use pest::iterators::{ Pair, Pairs, };
 
-use crate::compiler::{ ForLoop, Function, IfStatement, Math, VariableAssignment, VariableDeclaration, };
+use crate::compiler::{ ForLoop, Function, IfStatement, Math, VariableAssignment, VariableDeclaration, WhileLoop, };
 use crate::parser::{ self, DSLParser };
 
 pub struct CompilationContext<'a> {
@@ -37,6 +37,10 @@ pub fn compile_pair(context: &mut CompilationContext, pair: Pair<parser::Rule>) 
 		},
 		parser::Rule::variable_declaration => {
 			VariableDeclaration::compile(context, pair);
+			return None;
+		},
+		parser::Rule::while_loop => {
+			WhileLoop::compile(context, pair);
 			return None;
 		},
 		parser::Rule::EOI => {
