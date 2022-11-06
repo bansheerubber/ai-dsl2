@@ -120,7 +120,13 @@ impl Module {
 			let builder = Builder::new();
 			builder.seek_to_end(block);
 
-			let instruction = LLVMBuildCondBr(builder.get_builder(), value.value, if_true.get_block(), if_false.get_block());
+			let instruction = LLVMBuildCondBr(
+				builder.get_builder(),
+				self.math_resolve_value(block, value, Type::Integer(0, 1)).value,
+				if_true.get_block(),
+				if_false.get_block()
+			);
+
 			self.set_block_terminal(
 				block,
 				TerminalInstruction::ConditionalBranch {
