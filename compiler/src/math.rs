@@ -552,18 +552,26 @@ impl Module {
 				Type::Integer(pointer_number, bits1) => match result_type {
 					Type::Integer(_, bits2) => {
 						if bits1 > bits2 { // no bit truncating yet
-							todo!();
-						}
-
-						Value {
-							type_enum: Type::Integer(pointer_number, bits2),
-							value: LLVMBuildIntCast2(
-								builder.get_builder(),
-								value.value,
-								self.to_llvm_type(Type::Integer(pointer_number, bits2)), // upgrade bits, retain value pointer number
-								0,
-								self.string_table.to_llvm_string("iupgrade")
-							),
+							Value {
+								type_enum: Type::Integer(pointer_number, bits2),
+								value: LLVMBuildTrunc(
+									builder.get_builder(),
+									value.value,
+									self.to_llvm_type(Type::Integer(pointer_number, bits2)),
+									self.string_table.to_llvm_string("itrunc")
+								),
+							}
+						} else {
+							Value {
+								type_enum: Type::Integer(pointer_number, bits2),
+								value: LLVMBuildIntCast2(
+									builder.get_builder(),
+									value.value,
+									self.to_llvm_type(Type::Integer(pointer_number, bits2)), // upgrade bits, retain value pointer number
+									0,
+									self.string_table.to_llvm_string("iupgrade")
+								),
+							}
 						}
 					},
 					Type::Float(_) =>	Value {
