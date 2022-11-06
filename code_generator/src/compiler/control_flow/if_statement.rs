@@ -22,10 +22,8 @@ impl IfStatement {
 
 		// create body block, and also the block we jump to once we're done evaluating a control flow's body
 		let body_block = context.module.new_block("if_body", &context.current_function.as_ref().unwrap());
-		let continued_block = context.module.new_block("continued", &context.current_function.as_ref().unwrap());
-
-		// store where we're going to put the if statement's conditional block
-		let conditional_block = context.current_block.unwrap();
+		let conditional_block = context.module.split_block_in_place(context.current_block.as_mut().unwrap());
+		let continued_block = context.current_block.unwrap();
 
 		// compile the if statement body
 		context.current_block = Some(body_block);
@@ -33,7 +31,7 @@ impl IfStatement {
 
 		let mut chain: Vec<Box<dyn ControlFlow>> = vec![Box::new(
 			IfStatement {
-				body_block,
+				body_block: context.current_block.unwrap(), // let the things we just compiled control which block we're now in
 				conditional_block,
 				conditional_value,
 			}
