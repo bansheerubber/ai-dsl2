@@ -87,7 +87,9 @@ impl Module {
 			)?
 		};
 
+		// TODO have better type conversion here
 		// keep track of values so we can use the result of the logic operations in the end block
+		let value = self.math_resolve_value(logic.get_current_block(), value, Type::Integer(0, 64));
 		logic.values.push(value);
 
 		let builder = Builder::new();
@@ -112,13 +114,13 @@ impl Module {
 
 			let phi = LLVMBuildPhi(
 				builder.get_builder(),
-				self.to_llvm_type(Type::Integer(0, 64)), // TODO handle type conversion
+				self.to_llvm_type(Type::Integer(0, 64)), // TODO comparison for floats? other bit length integers?
 				self.string_table.to_llvm_string("phiend")
 			);
 
 			let mut incoming_values = Vec::new();
 			for value in logic.values {
-				incoming_values.push(value.value); // TODO handle type conversion
+				incoming_values.push(value.value);
 			}
 
 			let mut incoming_blocks = Vec::new();
