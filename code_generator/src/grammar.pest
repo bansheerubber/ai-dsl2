@@ -57,8 +57,9 @@ if_statement = { "if" ~ "(" ~ expression ~ ")" ~ "{" ~ if_statement_body ~ "}" ~
 else_if_statement = { "else if" ~ "(" ~ expression ~ ")" ~ "{" ~ if_statement_body ~ "}" }
 else_statement = { "else" ~ "{" ~ if_statement_body ~ "}" }
 
-while_loop = { "while" ~ "(" ~ expression ~ ")" ~ "{" ~ body* ~ "}" }
-for_loop = { "for" ~ "(" ~ expression ~ ")" ~ "{" ~ body* ~ "}" }
+loop_body = { body* }
+while_loop = { "while" ~ "(" ~ expression ~ ")" ~ "{" ~ loop_body ~ "}" }
+for_loop = { "for" ~ "(" ~ variable_declaration ~ ";" ~ expression ~ ";" ~ expression ~ ")" ~ "{" ~ loop_body ~ "}" }
 
 function_declaration_args = { (token ~ ":" ~ type_token ~ ",")*  ~ token ~ ":" ~ type_token }
 function_body = { body* }
