@@ -42,7 +42,5 @@ impl ForLoop {
 		context.module.add_branch(context.current_block.unwrap(), increment_block);
 
 		context.current_block = Some(continued_block);
-
-		println!("{:?}", pairs);
 	}
 }
