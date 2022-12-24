@@ -19,13 +19,18 @@ pub struct Function {
 	pub(crate) block_terminals: HashMap<Block, TerminalInstruction>,
 
 	function: LLVMValueRef,
+	function_type: LLVMTypeRef,
 	pub name: String,
-	pub return_type: LLVMTypeRef,
+	pub return_type: Type,
 }
 
 impl Function {
 	pub fn get_function(&self) -> LLVMValueRef {
 		return self.function;
+	}
+
+	pub fn get_function_type(&self) -> LLVMTypeRef {
+		return self.function_type;
 	}
 
 	pub fn add_block(&mut self, block: Block) {
@@ -75,8 +80,9 @@ impl Module {
 			blocks: HashMap::new(),
 			block_terminals: HashMap::new(),
 			function,
+			function_type,
 			name: String::from(name),
-			return_type: function_type,
+			return_type,
 		};
 
 		self.function_table.add_function(name, function)
