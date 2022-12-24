@@ -11,6 +11,7 @@ pub use loops::for_loop::ForLoop;
 pub use function::Function;
 pub use control_flow::if_statement::IfStatement;
 pub use math::Math;
+pub use control_flow::return_statement::Return;
 pub use variable_assignment::VariableAssignment;
 pub use variable_declaration::VariableDeclaration;
 pub use loops::while_loop::WhileLoop;
