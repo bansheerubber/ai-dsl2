@@ -57,17 +57,19 @@ impl Module {
 		}
 	}
 
-	pub fn create_global_string(&mut self, block: Block, string: &str) -> LLVMValueRef {
+	pub fn create_global_string(&mut self, block: Block, string: &str) -> Value {
 		unsafe {
 			let builder = Builder::new();
 			builder.seek_to_end(block);
 
-			// TODO for this to not seg fault, we need to have the builder positioned at the end of a block? what if its positioned anywhere?
-			LLVMBuildGlobalStringPtr(
-				builder.get_builder(),
-				self.string_table.to_llvm_string(string),
-				self.string_table.to_llvm_string("") // TODO what is this for?
-			)
+			Value {
+				type_enum: Type::CString(0),
+				value: LLVMBuildGlobalStringPtr(
+					builder.get_builder(),
+					self.string_table.to_llvm_string(string),
+					self.string_table.to_llvm_string("") // TODO what is this for?
+				),
+			}
 		}
 	}
 
