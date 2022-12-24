@@ -14,7 +14,6 @@ impl Return {
 		let value = compile_pair(context, pairs.last().unwrap()).unwrap();
 
 		context.module.add_return(context.current_block.unwrap(), value);
-		println!("hey there");
 
 		Return {
 			value,

@@ -66,9 +66,10 @@ function_body = { body* }
 function = { "function" ~ token ~ "(" ~ function_declaration_args? ~ ")" ~ (":" ~ type_token)? ~ "{" ~ function_body ~ "}" }
 
 return_statement = { "return" ~ math }
+void_return_statement = { "return" }
 loop_control = { "break" | "continue" }
 
-line = _{ (loop_control ~ ";") | (return_statement ~ ";") | (expression ~ ";") }
+line = _{ (loop_control ~ ";") | (return_statement ~ ";") | (void_return_statement ~ ";") | (expression ~ ";") }
 body = _{ function | if_statement | while_loop | for_loop | line }
 
 program = _{ SOI ~ body+ ~ EOI }
