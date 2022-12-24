@@ -5,14 +5,17 @@ use crate::{ Builder, FunctionKey, Module, strings };
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum TerminalInstruction {
+	Branch {
+		instruction: LLVMValueRef,
+		target: LLVMBasicBlockRef,
+	},
 	ConditionalBranch {
 		instruction: LLVMValueRef,
 		target_if_false: LLVMBasicBlockRef,
 		target_if_true: LLVMBasicBlockRef,
 	},
-	Branch {
+	Default {
 		instruction: LLVMValueRef,
-		target: LLVMBasicBlockRef,
 	},
 	None, // we should never be in this state unless only temporarily
 	Return {
@@ -30,8 +33,9 @@ pub enum TerminalInstruction {
 impl TerminalInstruction {
 	pub fn get_instruction_ref(&self) -> LLVMValueRef {
 		match *self {
-			TerminalInstruction::ConditionalBranch { instruction, target_if_true: _, target_if_false: _, } => instruction,
 			TerminalInstruction::Branch { instruction, target: _, } => instruction,
+			TerminalInstruction::ConditionalBranch { instruction, target_if_true: _, target_if_false: _, } => instruction,
+			TerminalInstruction::Default { instruction, } => instruction,
 			TerminalInstruction::Return { instruction, value: _, } => instruction,
 			TerminalInstruction::ReturnVoid { instruction, } => instruction,
 			TerminalInstruction::None => panic!("Could not get terminal ref"),
@@ -83,7 +87,7 @@ impl Module {
 			};
 
 			function.add_block(block);
-			function.set_block_terminal(block, TerminalInstruction::ReturnVoid { instruction, });
+			function.set_block_terminal(block, TerminalInstruction::Default { instruction, });
 
 			return block;
 		};

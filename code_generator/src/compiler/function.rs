@@ -29,7 +29,7 @@ impl Function {
 		compile_pairs(context, pairs.last().unwrap().into_inner());
 
 		let function = context.module.function_table.get_function(&context.current_function.as_ref().unwrap()).unwrap();
-		if let None = function.get_block_terminal(context.current_block.unwrap()) {
+		if function.has_default_block_terminal(context.current_block.unwrap()) {
 			context.module.add_return_void(context.current_block.unwrap());
 		}
 

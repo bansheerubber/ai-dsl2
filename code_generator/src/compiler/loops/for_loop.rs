@@ -38,7 +38,10 @@ impl ForLoop {
 		compile_pairs(context, pairs.next().unwrap().into_inner());
 
 		// jump into increment
-		context.module.add_branch(context.current_block.unwrap(), increment_block);
+		let function = context.module.function_table.get_function(&context.current_function.as_ref().unwrap()).unwrap();
+		if function.has_default_block_terminal(context.current_block.unwrap()) {
+			context.module.add_branch(context.current_block.unwrap(), increment_block);
+		}
 
 		context.current_block = Some(continued_block);
 	}

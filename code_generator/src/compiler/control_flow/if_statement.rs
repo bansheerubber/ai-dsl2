@@ -77,7 +77,10 @@ impl IfStatement {
 			}
 
 			// add branch to each control flow's body block that jumps to a point after the control flow chain
-			context.module.add_branch(control_flow.get_body_block(), continued_block);
+			let function = context.module.function_table.get_function(&context.current_function.as_ref().unwrap()).unwrap();
+			if function.has_default_block_terminal(control_flow.get_body_block()) {
+				context.module.add_branch(control_flow.get_body_block(), continued_block);
+			}
 
 			context.module.move_block_after(continued_block, control_flow.get_body_block());
 		}

@@ -28,8 +28,11 @@ impl WhileLoop {
 		context.current_block = Some(body_block);
 		compile_pairs(context, pairs.next().unwrap().into_inner());
 
-		// jump into conditional
-		context.module.add_branch(context.current_block.unwrap(), conditional_block);
+		// jump into conditional, only if another terminal hasn't been assigned
+		let function = context.module.function_table.get_function(&context.current_function.as_ref().unwrap()).unwrap();
+		if function.has_default_block_terminal(context.current_block.unwrap()) {
+			context.module.add_branch(context.current_block.unwrap(), conditional_block);
+		}
 
 		context.current_block = Some(continued_block);
 	}

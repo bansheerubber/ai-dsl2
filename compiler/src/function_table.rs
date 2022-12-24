@@ -47,6 +47,14 @@ impl Function {
 	pub fn delete_block_terminal(&mut self, block: Block) {
 		self.block_terminals.remove(&block);
 	}
+
+	pub fn has_default_block_terminal(&self, block: Block) -> bool {
+		if let Some(TerminalInstruction::Default { instruction: _ }) = self.get_block_terminal(block) {
+			return true;
+		} else {
+			return false;
+		}
+	}
 }
 
 impl Module {
