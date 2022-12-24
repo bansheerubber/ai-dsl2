@@ -13,7 +13,7 @@ pub fn configure_pratt() -> PrattParser<Rule> {
 		.op(Op::infix(Rule::less_than, Assoc::Left) | Op::infix(Rule::greater_than, Assoc::Left))
 		.op(Op::infix(Rule::addition, Assoc::Left) | Op::infix(Rule::subtraction, Assoc::Left))
 		.op(Op::infix(Rule::multiplication, Assoc::Left) | Op::infix(Rule::division, Assoc::Left))
-		.op(Op::prefix(Rule::negative) | Op::prefix(Rule::logical_not) | Op::prefix(Rule::bitwise_not) | Op::prefix(Rule::learned_value))
+		.op(Op::prefix(Rule::negative) | Op::prefix(Rule::logical_not) | Op::prefix(Rule::bitwise_not))
 }
 
 #[derive(Default)]

@@ -12,6 +12,8 @@ float = @{ digit+ ~ "." ~ digit+ }
 number = _{ float | integer }
 string_literal = @{ (("'") ~ ('\x00'..'\x26' | '\x28'..'\xFF')* ~ ("'")) | (("\"") ~ ('\x00'..'\x21' | '\x23'..'\xFF')* ~ ("\"")) }
 
+learned_value = { "#" }
+
 token = @{ (alpha | special) ~ (alpha | digit | special)* }
 type_token = @{ (alpha | special) ~ (alpha | digit | special)* }
 variable_declaration = { "let" ~ token ~ ":" ~ type_token ~ "=" ~ math }
@@ -43,10 +45,9 @@ binary_operator = _{ addition | subtraction | multiplication | division | logica
 negative = { "-" }
 logical_not = { "!" }
 bitwise_not = { "~" }
-learned_value = { "#" }
-unary_operator = _{ negative | logical_not | bitwise_not | learned_value }
+unary_operator = _{ negative | logical_not | bitwise_not }
 
-operand = _{ number | string_literal | function_call | token }
+operand = _{ learned_value | number | string_literal | function_call | token }
 primary = _{ operand | ( "(" ~ math ~ ")") }
 math = { unary_operator? ~ primary ~ (binary_operator ~ unary_operator? ~ primary)* }
 

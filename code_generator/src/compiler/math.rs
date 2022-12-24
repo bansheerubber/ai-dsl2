@@ -4,6 +4,8 @@ use pest::iterators::Pair;
 use crate::compiler::CompilationContext;
 use crate::parser::{ self, configure_pratt };
 
+use super::LearnedValue;
+
 #[derive(Debug)]
 enum MathIR {
 	Constant {
@@ -43,6 +45,7 @@ impl Math {
 				match kind {
 					parser::Rule::float => context.module.create_immediate_float(value.parse::<f64>().unwrap()),
 					parser::Rule::integer => context.module.create_immediate_integer(value.parse::<u64>().unwrap()),
+					parser::Rule::learned_value => LearnedValue::compile(context),
 					parser::Rule::token => context.module.get_variable(context.current_block.unwrap(), &value)?,
 					_ => unreachable!(),
 				},

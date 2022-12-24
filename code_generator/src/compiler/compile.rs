@@ -2,7 +2,16 @@ use ai_dsl2_compiler::{ Block, FunctionKey, Module, Type, Value, };
 use pest::iterators::{ Pair, Pairs, };
 
 use crate::compiler::{
-	ForLoop, Function, IfStatement, Math, Return, VariableAssignment, VariableDeclaration, VoidReturn, WhileLoop,
+	ForLoop,
+	Function,
+	IfStatement,
+	LearnedValue,
+	Math,
+	Return,
+	VariableAssignment,
+	VariableDeclaration,
+	VoidReturn,
+	WhileLoop,
 };
 use crate::parser::{ self, DSLParser };
 
@@ -48,7 +57,10 @@ pub fn compile_pair(context: &mut CompilationContext, pair: Pair<parser::Rule>) 
 		parser::Rule::if_statement => {
 			IfStatement::compile(context, pair);
 			return None;
-		}
+		},
+		parser::Rule::learned_value => {
+			return Some(LearnedValue::compile(context));
+		},
 		parser::Rule::math => {
 			Some(Math::compile(context, pair))
 		},

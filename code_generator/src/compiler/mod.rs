@@ -1,6 +1,7 @@
 pub mod compile;
 pub mod control_flow;
 pub mod function;
+pub mod learned_value;
 pub mod loops;
 pub mod math;
 pub mod variable_assignment;
@@ -10,6 +11,7 @@ pub use compile::{ CompilationContext, compile_pair, compile_pairs, };
 pub use control_flow::if_statement::IfStatement;
 pub use control_flow::return_statement::Return;
 pub use control_flow::void_return_statement::VoidReturn;
+pub use learned_value::LearnedValue;
 pub use loops::for_loop::ForLoop;
 pub use function::Function;
 pub use math::Math;
