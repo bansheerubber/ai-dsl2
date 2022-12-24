@@ -1,7 +1,7 @@
 use llvm_sys::core::*;
 use llvm_sys::prelude::*;
 
-use crate::{ Builder, FunctionKey, Module, strings };
+use crate::{ Builder, FunctionKey, Module, Value, strings };
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum TerminalInstruction {
@@ -138,20 +138,30 @@ impl Module {
 		}
 	}
 
-	pub fn add_function_call(&mut self, block: Block, function: &FunctionKey, args: &mut [LLVMValueRef]) {
+	pub fn add_function_call(&mut self, block: Block, function: &FunctionKey, args: &mut [Value]) -> Value {
 		let function = self.function_table.get_function(&function).unwrap();
 		unsafe {
 			let builder = Builder::new();
 			builder.seek_to_end(block);
 
-			LLVMBuildCall2(
+			let mut llvm_args = vec![];
+			for arg in args {
+				llvm_args.push(arg.value);
+			}
+
+			let value = LLVMBuildCall2(
 				builder.get_builder(),
-				function.return_type,
+				function.get_function_type(),
 				function.get_function(),
-				args.as_mut_ptr(),
-				args.len() as u32,
+				llvm_args.as_mut_ptr(),
+				llvm_args.len() as u32,
 				self.string_table.to_llvm_string("") // TODO what is this for?
 			);
+
+			Value {
+				type_enum: function.return_type,
+				value,
+			}
 		}
 	}
 }
