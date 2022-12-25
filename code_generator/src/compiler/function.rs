@@ -11,6 +11,7 @@ impl Function {
 		let mut name = "";
 		let mut return_type = "";
 
+		let mut argument_types = vec![];
 		let pairs = pair.into_inner();
 		for pair in pairs.clone() {
 			if pair.as_rule() == parser::Rule::token {
@@ -19,10 +20,16 @@ impl Function {
 				return_type = pair.as_str();
 			} else if pair.as_rule() == parser::Rule::function_body {
 				break;
+			} else if pair.as_rule() == parser::Rule::function_declaration_args { // interpret arguments
+				for argument_pair in pair.into_inner() {
+					if argument_pair.as_rule() == parser::Rule::type_token {
+						argument_types.push(convert_type_name(argument_pair.as_str()));
+					}
+				}
 			}
 		}
 
-		context.current_function = Some(context.module.create_function(name, &vec![], convert_type_name(return_type)));
+		context.current_function = Some(context.module.create_function(name, &argument_types, convert_type_name(return_type)));
 		let block = context.module.new_block(name, &context.current_function.as_ref().unwrap());
 		context.current_block = Some(block);
 
