@@ -30,10 +30,10 @@ impl CompilationContext<'_> {
 
 		CompilationContext {
 			placeholder_evaluation_float: module.create_function(
-				"placeholder_eval_float", &vec![Type::Integer(0, 64), Type::CString(0)], Type::Float(0)
+				"airt_predict_float", &vec![Type::CString(0), Type::Integer(0, 64), Type::Integer(0, 64)], Type::Float(0)
 			),
 			placeholder_evaluation_int: module.create_function(
-				"placeholder_eval_int", &vec![Type::Integer(0, 64), Type::CString(0)], Type::Integer(0, 64)
+				"airt_predict_int", &vec![Type::CString(0), Type::Integer(0, 64), Type::Integer(0, 64)], Type::Integer(0, 64)
 			),
 
 			current_block: None,
