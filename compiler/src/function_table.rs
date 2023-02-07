@@ -72,8 +72,46 @@ impl Module {
 		let function_type;
 		let function;
 		unsafe {
-			function_type = LLVMFunctionType(self.to_llvm_type(return_type), arguments.as_mut_ptr(), arguments.len() as u32, 0);
-			function = LLVMAddFunction(self.get_module(), self.string_table.to_llvm_string(name), function_type);
+			function_type = LLVMFunctionType(
+				self.to_llvm_type(return_type), arguments.as_mut_ptr(), arguments.len() as u32, 0
+			);
+			function = LLVMAddFunction(
+				self.get_module(),
+				self.string_table.to_llvm_string(&self.transform_function_name(name)),
+				function_type
+			);
+		}
+
+		let function = Function {
+			blocks: HashMap::new(),
+			block_terminals: HashMap::new(),
+			function,
+			function_type,
+			name: String::from(name),
+			return_type,
+		};
+
+		self.function_table.add_function(name, function)
+	}
+
+	// creates an external function and does not transform the function name
+	pub fn create_extern_function(&mut self, name: &str, arg_types: &Vec<Type>, return_type: Type) -> FunctionKey {
+		let mut arguments = Vec::new();
+		for &arg_type in arg_types {
+			arguments.push(self.to_llvm_type(arg_type));
+		}
+
+		let function_type;
+		let function;
+		unsafe {
+			function_type = LLVMFunctionType(
+				self.to_llvm_type(return_type), arguments.as_mut_ptr(), arguments.len() as u32, 0
+			);
+			function = LLVMAddFunction(
+				self.get_module(),
+				self.string_table.to_llvm_string(name),
+				function_type
+			);
 		}
 
 		let function = Function {

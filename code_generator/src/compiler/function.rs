@@ -29,7 +29,9 @@ impl Function {
 			}
 		}
 
-		context.current_function = Some(context.module.create_function(name, &argument_types, convert_type_name(return_type)));
+		context.current_function = Some(
+			context.module.create_function(name, &argument_types, convert_type_name(return_type))
+		);
 		let block = context.module.new_block(name, &context.current_function.as_ref().unwrap());
 		context.current_block = Some(block);
 

@@ -147,6 +147,12 @@ impl Module {
 	pub fn get_module(&self) -> LLVMModuleRef {
 		self.module
 	}
+
+	// some function names in LLVM have a special meaning (main, linked functions, etc), so to avoid this problem the DSL
+	// will transform them a little to prevent symbol collisions
+	pub fn transform_function_name(&self, name: &str) -> String {
+		return format!("_{}", name);
+	}
 }
 
 impl Drop for Module {

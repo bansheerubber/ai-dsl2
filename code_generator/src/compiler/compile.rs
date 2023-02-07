@@ -29,10 +29,10 @@ impl CompilationContext<'_> {
 		let mut module = Module::new("main");
 
 		CompilationContext {
-			placeholder_evaluation_float: module.create_function(
+			placeholder_evaluation_float: module.create_extern_function(
 				"airt_predict_float", &vec![Type::CString(0), Type::Integer(0, 64), Type::Integer(0, 64)], Type::Float(0)
 			),
-			placeholder_evaluation_int: module.create_function(
+			placeholder_evaluation_int: module.create_extern_function(
 				"airt_predict_int", &vec![Type::CString(0), Type::Integer(0, 64), Type::Integer(0, 64)], Type::Integer(0, 64)
 			),
 
