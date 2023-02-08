@@ -2,7 +2,7 @@ use llvm_sys::core::*;
 use llvm_sys::prelude::*;
 use std::collections::HashMap;
 
-use crate::{ Block, Module, TerminalInstruction, Type };
+use crate::{ Block, Module, TerminalInstruction, Type, Value, };
 
 #[derive(Clone, Debug)]
 pub struct Function {
@@ -18,8 +18,10 @@ pub struct Function {
 	// terminated.
 	pub(crate) block_terminals: HashMap<Block, TerminalInstruction>,
 
+	pub argument_types: Vec<Type>,
 	function: LLVMValueRef,
 	function_type: LLVMTypeRef,
+	pub learned_values: Vec<Value>,
 	pub name: String,
 	pub return_type: Type,
 }
@@ -60,6 +62,10 @@ impl Function {
 			return false;
 		}
 	}
+
+	pub fn add_learned_value(&mut self, value: Value) {
+		self.learned_values.push(value);
+	}
 }
 
 impl Module {
@@ -83,15 +89,17 @@ impl Module {
 		}
 
 		let function = Function {
+			argument_types: arg_types.clone(),
 			blocks: HashMap::new(),
 			block_terminals: HashMap::new(),
 			function,
 			function_type,
-			name: String::from(name),
+			learned_values: vec![],
+			name: self.transform_function_name(name),
 			return_type,
 		};
 
-		self.function_table.add_function(name, function)
+		self.function_table.add_function(&self.transform_function_name(name), function)
 	}
 
 	// creates an external function and does not transform the function name
@@ -115,10 +123,12 @@ impl Module {
 		}
 
 		let function = Function {
+			argument_types: arg_types.clone(),
 			blocks: HashMap::new(),
 			block_terminals: HashMap::new(),
 			function,
 			function_type,
+			learned_values: vec![],
 			name: String::from(name),
 			return_type,
 		};
@@ -172,5 +182,9 @@ impl FunctionTable {
 		} else {
 			return None;
 		}
+	}
+
+	pub fn iter(&self) -> std::collections::hash_map::Iter<'_, FunctionKey, Function> {
+		return self.functions.iter();
 	}
 }

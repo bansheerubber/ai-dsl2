@@ -52,6 +52,56 @@ impl Module {
 	}
 
 	pub fn write_bitcode(&mut self, filename: &str) {
+		// add airt function reference
+		let airt_register_function = self.create_extern_function(
+			"airt_register_function",
+			&vec![Type::CString(0), Type::Integer(0, 64), Type::Integer(0, 64)],
+			Type::Void
+		);
+
+		// generate main function
+		let main_function = self.create_extern_function("main", &vec![], Type::Integer(0, 64));
+		let main_block = self.new_block("main", &main_function);
+
+		// TODO figure out how to make this block less messy
+		let name_globals = {
+			let mut names = Vec::new();
+			for (_, function) in self.function_table.iter() {
+				names.push(function.name.clone());
+			}
+
+			let mut name_globals = Vec::new();
+			for name in names {
+				name_globals.push(self.create_global_string(main_block, &name));
+			}
+
+			name_globals
+		};
+
+		// add airt calls
+		let mut args: Vec<Vec<Value>> = Vec::new();
+		for ((_, function), name) in self.function_table.iter().zip(name_globals.iter()) {
+			if function.learned_values.len() == 0 {
+				continue;
+			}
+
+			if function.argument_types.len() == 0 {
+				panic!("Learned value container function needs more than 0 arguments");
+			}
+
+			args.push(vec![
+				*name,
+				self.create_immediate_integer(function.argument_types.len() as u64),
+				self.create_immediate_integer(function.learned_values.len() as u64),
+			]);
+		}
+
+		for mut arg in args {
+			self.add_function_call(main_block, &airt_register_function, &mut arg);
+		}
+
+		self.add_return(main_block, self.create_immediate_integer(0));
+
 		unsafe {
 			LLVMWriteBitcodeToFile(self.module, self.string_table.to_llvm_string(filename));
 		}
