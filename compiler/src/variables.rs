@@ -118,4 +118,16 @@ impl Module {
 			})
 		}
 	}
+
+	pub fn add_argument(&mut self, block: Block, name: &str, type_enum: Type, value: Value) {
+		self.variable_table.add(
+			block.get_parent(),
+			Variable {
+				type_enum,
+				is_mutable: true,
+				name: String::from(name),
+				value,
+			}
+		);
+	}
 }

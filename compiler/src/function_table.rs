@@ -19,6 +19,7 @@ pub struct Function {
 	pub(crate) block_terminals: HashMap<Block, TerminalInstruction>,
 
 	pub argument_types: Vec<Type>,
+	pub argument_values: Vec<Value>,
 	function: LLVMValueRef,
 	function_type: LLVMTypeRef,
 	pub learned_values: Vec<Value>,
@@ -66,10 +67,16 @@ impl Function {
 	pub fn add_learned_value(&mut self, value: Value) {
 		self.learned_values.push(value);
 	}
+
+	pub fn get_argument(&self, index: usize) -> Value {
+		return self.argument_values[index];
+	}
 }
 
 impl Module {
-	pub fn create_function(&mut self, name: &str, arg_types: &Vec<Type>, return_type: Type) -> FunctionKey {
+	pub fn create_function(
+		&mut self, name: &str, arg_types: &Vec<Type>, return_type: Type
+	) -> FunctionKey {
 		let mut arguments = Vec::new();
 		for &arg_type in arg_types {
 			arguments.push(self.to_llvm_type(arg_type));
@@ -77,24 +84,37 @@ impl Module {
 
 		let function_type;
 		let function;
+		let mut argument_values = Vec::new();
 		unsafe {
 			function_type = LLVMFunctionType(
 				self.to_llvm_type(return_type), arguments.as_mut_ptr(), arguments.len() as u32, 0
 			);
+
 			function = LLVMAddFunction(
 				self.get_module(),
 				self.string_table.to_llvm_string(&self.transform_function_name(name)),
 				function_type
 			);
+
+			for i in 0..arg_types.len() {
+				let value = LLVMGetParam(function, i as u32);
+				argument_values.push(
+					Value {
+						type_enum: arg_types[i].clone(),
+						value,
+					}
+				);
+			}
 		}
 
 		let function = Function {
 			argument_types: arg_types.clone(),
+			argument_values,
 			blocks: HashMap::new(),
 			block_terminals: HashMap::new(),
 			function,
 			function_type,
-			learned_values: vec![],
+			learned_values: Vec::new(),
 			name: self.transform_function_name(name),
 			return_type,
 		};
@@ -111,19 +131,32 @@ impl Module {
 
 		let function_type;
 		let function;
+		let mut argument_values = Vec::new();
 		unsafe {
 			function_type = LLVMFunctionType(
 				self.to_llvm_type(return_type), arguments.as_mut_ptr(), arguments.len() as u32, 0
 			);
+
 			function = LLVMAddFunction(
 				self.get_module(),
 				self.string_table.to_llvm_string(name),
 				function_type
 			);
+
+			for i in 0..arg_types.len() {
+				let value = LLVMGetParam(function, i as u32);
+				argument_values.push(
+					Value {
+						type_enum: arg_types[i].clone(),
+						value,
+					}
+				);
+			}
 		}
 
 		let function = Function {
 			argument_types: arg_types.clone(),
+			argument_values,
 			blocks: HashMap::new(),
 			block_terminals: HashMap::new(),
 			function,
