@@ -52,16 +52,25 @@ impl Module {
 	}
 
 	pub fn write_bitcode(&mut self, filename: &str) {
-		// add airt function reference
+		// add airt function references
 		let airt_register_function = self.create_extern_function(
 			"airt_register_function",
 			&vec![Type::CString(0), Type::Integer(0, 64), Type::Integer(0, 64)],
 			Type::Void
 		);
 
+		let airt_init = self.create_extern_function(
+			"airt_init",
+			&vec![],
+			Type::Void
+		);
+
 		// generate main function
 		let main_function = self.create_extern_function("main", &vec![], Type::Integer(0, 64));
 		let main_block = self.new_block("main", &main_function);
+
+		// add call to `airt_init`
+		self.add_function_call(main_block, &airt_init, &mut vec![]);
 
 		// TODO figure out how to make this block less messy
 		let name_globals = {
@@ -78,7 +87,7 @@ impl Module {
 			name_globals
 		};
 
-		// add airt calls
+		// get the name and input/output numbers for `airt_register_function`
 		let mut args: Vec<Vec<Value>> = Vec::new();
 		for ((_, function), name) in self.function_table.iter().zip(name_globals.iter()) {
 			if function.learned_values.len() == 0 {
@@ -96,10 +105,12 @@ impl Module {
 			]);
 		}
 
+		// call `airt_register_function`
 		for mut arg in args {
 			self.add_function_call(main_block, &airt_register_function, &mut arg);
 		}
 
+		// return 0
 		self.add_return(main_block, self.create_immediate_integer(0));
 
 		unsafe {
