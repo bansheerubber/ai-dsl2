@@ -17,6 +17,7 @@ use crate::compiler::{
 use crate::parser::{ self, DSLParser };
 
 pub struct CompilationContext<'a> {
+	pub airt_handle_function_call: FunctionKey,
 	pub current_block: Option<Block>,
 	pub current_function: Option<FunctionKey>,
 	pub module: Module,
@@ -33,7 +34,14 @@ impl CompilationContext<'_> {
 			"_airt_print_float", &vec![Type::Float(0)], Type::Void
 		);
 
+		module.create_extern_function(
+			"_airt_print_int", &vec![Type::Integer(0, 64)], Type::Void
+		);
+
 		CompilationContext {
+			airt_handle_function_call: module.create_extern_function(
+				"airt_handle_function_call", &vec![Type::CString(0), Type::Float(1)], Type::Integer(0, 64)
+			),
 			placeholder_evaluation_float: module.create_extern_function(
 				"airt_predict_float", &vec![Type::CString(0), Type::Integer(0, 64), Type::Integer(0, 64)], Type::Float(0)
 			),
