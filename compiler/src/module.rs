@@ -139,11 +139,13 @@ impl Module {
 			let builder = Builder::new();
 			builder.seek_to_end(block);
 
+			let value = self.resolve_value(block, value).value;
+
 			self.set_block_terminal(
 				block,
 				TerminalInstruction::Return {
-					instruction: LLVMBuildRet(builder.get_builder(), value.value),
-					value: value.value,
+					instruction: LLVMBuildRet(builder.get_builder(), value),
+					value,
 				}
 			);
 		}
