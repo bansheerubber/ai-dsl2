@@ -2,7 +2,7 @@ use llvm_sys::bit_writer::*;
 use llvm_sys::core::*;
 use llvm_sys::prelude::*;
 
-use crate::{ Block, Builder, FunctionTable, TerminalInstruction, Type, Value, VariableTable, };
+use crate::{ Block, Builder, FunctionKey, FunctionTable, TerminalInstruction, Type, Value, VariableTable, };
 use crate::strings::StringTable;
 
 #[derive(Debug)]
@@ -109,6 +109,9 @@ impl Module {
 		for mut arg in args {
 			self.add_function_call(main_block, &airt_register_function, &mut arg);
 		}
+
+		// call `_main`
+		self.add_function_call(main_block, &FunctionKey::new("_main"), &mut []);
 
 		// return 0
 		self.add_return(main_block, self.create_immediate_integer(0));
