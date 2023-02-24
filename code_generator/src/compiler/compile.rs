@@ -4,6 +4,7 @@ use pest::iterators::{ Pair, Pairs, };
 use crate::compiler::{
 	ForLoop,
 	Function,
+	FunctionCall,
 	IfStatement,
 	LearnedValue,
 	Math,
@@ -53,6 +54,9 @@ pub fn compile_pair(context: &mut CompilationContext, pair: Pair<parser::Rule>) 
 		parser::Rule::function => {
 			Function::compile(context, pair);
 			return None;
+		},
+		parser::Rule::function_call => {
+			return Some(FunctionCall::compile(context, pair));
 		},
 		parser::Rule::if_statement => {
 			IfStatement::compile(context, pair);

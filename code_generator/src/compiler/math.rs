@@ -4,26 +4,29 @@ use pest::iterators::Pair;
 use crate::compiler::CompilationContext;
 use crate::parser::{ self, configure_pratt };
 
-use super::LearnedValue;
+use super::{ LearnedValue, compile_pair, };
 
 #[derive(Debug)]
-enum MathIR {
+enum MathIR<'a> {
 	Constant {
 		kind: parser::Rule,
 		value: String,
 	},
 	LogicOperation {
 		operation: parser::Rule,
-		values: Vec<Box<MathIR>>,
+		values: Vec<Box<MathIR<'a>>>,
 	},
 	Operation {
-		lhs: Box<MathIR>,
+		lhs: Box<MathIR<'a>>,
 		operation: parser::Rule,
-		rhs: Box<MathIR>,
+		rhs: Box<MathIR<'a>>,
 	},
 	UnaryOperation {
 		operation: parser::Rule,
-		value: Box<MathIR>,
+		value: Box<MathIR<'a>>,
+	},
+	Value {
+		pair: Pair<'a, parser::Rule>,
 	},
 }
 
@@ -144,6 +147,14 @@ impl Math {
 					None
 				));
 			},
+			MathIR::Value {
+				pair,
+			} => {
+				return Ok((
+					compile_pair(context, pair).unwrap(),
+					None
+				));
+			},
 		}
 	}
 
@@ -151,6 +162,9 @@ impl Math {
 	fn _compile(pair: Pair<parser::Rule>) -> Box<MathIR> {
 		let value = configure_pratt()
 			.map_primary(|primary| match primary.as_rule() {
+				parser::Rule::function_call => Box::new(MathIR::Value {
+					pair: primary,
+				}),
 				parser::Rule::math => Math::_compile(primary),
 				kind => Box::new(MathIR::Constant {
 					kind,
