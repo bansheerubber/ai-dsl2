@@ -1,7 +1,7 @@
 use llvm_sys::core::*;
 use llvm_sys::prelude::*;
 
-use crate::{ Builder, FunctionKey, Module, Value, strings };
+use crate::{ Builder, FunctionKey, Module, Type, Value, strings };
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum TerminalInstruction {
@@ -139,26 +139,33 @@ impl Module {
 	}
 
 	pub fn add_function_call(&mut self, block: Block, function: &FunctionKey, args: &mut [Value]) -> Value {
-		let function = self.function_table.get_function(&function).unwrap();
 		unsafe {
 			let builder = Builder::new();
 			builder.seek_to_end(block);
 
-			if args.len() != function.argument_types.len() {
+			let function_argument_types = self.function_table.get_function(&function).unwrap().argument_types.iter()
+				.map(|x| *x)
+				.collect::<Vec<Type>>();
+
+			if args.len() != function_argument_types.len() {
 				panic!("Incorrect number of function arguments");
 			}
 
+			let arg_types = args.iter().map(|x| x.type_enum).collect::<Vec<Type>>();
+
 			// test argument types
-			for (arg, arg_type) in args.iter().zip(function.argument_types.iter()) {
-				if &arg.type_enum != arg_type {
-					panic!("Incorrect function argument types");
+			for (arg, arg_type) in arg_types.iter().zip(function_argument_types.iter()) {
+				if arg.zero_pointer_number() != arg_type.zero_pointer_number() { // TODO figure out the pointer number stuff
+					panic!("Incorrect function argument types {:?} {:?}", arg_types, function_argument_types);
 				}
 			}
 
 			let mut llvm_args = vec![];
-			for arg in args {
-				llvm_args.push(arg.value);
+			for (arg, arg_type) in args.iter().zip(function_argument_types.iter()) {
+				llvm_args.push(self.math_resolve_value(block, *arg, *arg_type).value);
 			}
+
+			let function = self.function_table.get_function(&function).unwrap();
 
 			let value = LLVMBuildCall2(
 				builder.get_builder(),
