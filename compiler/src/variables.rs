@@ -94,12 +94,51 @@ impl Module {
 		}
 	}
 
+	pub fn add_global_variable(&mut self, name: &str, type_enum: Type) -> Value {
+		unsafe {
+			let value = Value {
+				type_enum: self.upgrade_type(type_enum),
+				value: LLVMAddGlobal(
+					self.get_module(),
+					self.to_llvm_type(type_enum),
+					self.string_table.to_llvm_string(name)
+				),
+			};
+
+			self.variable_table.add(
+				std::ptr::null_mut(),
+				Variable {
+					type_enum,
+					is_mutable: true,
+					name: String::from(name),
+					value,
+				}
+			);
+
+			match type_enum {
+				Type::Float(_) => {
+					LLVMSetInitializer(value.value, LLVMConstReal(self.to_llvm_type(Type::Float(0)), 0.0));
+				}
+				Type::Integer(_, bits) => {
+					LLVMSetInitializer(value.value, LLVMConstInt(self.to_llvm_type(Type::Integer(0, bits)), 0, 0));
+				},
+				_ => todo!(),
+			}
+
+			return value;
+		}
+	}
+
 	pub fn get_variable(&mut self, block: Block, name: &str) -> Result<Value, MathError> {
 		if let Some(variable) = self.variable_table.get(block.get_parent(), name) {
-			Ok(variable.value)
-		} else {
-			Err(MathError::UndefinedVariable(String::from(name)))
+			return Ok(variable.value);
 		}
+
+		if let Some(variable) = self.variable_table.get(std::ptr::null_mut(), name) {
+			return Ok(variable.value);
+		}
+
+		Err(MathError::UndefinedVariable(String::from(name)))
 	}
 
 	pub fn add_store(&mut self, block: Block, location: Value, value: Value) -> Result<Value, MathError> {
