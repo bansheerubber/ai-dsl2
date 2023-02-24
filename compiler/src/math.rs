@@ -547,11 +547,14 @@ impl Module {
 							self.string_table.to_llvm_string("icast")
 						),
 					},
-					_ => todo!(),
+					Type::Float(_) => value,
+					_ => todo!("{:?}", result_type),
 				},
 				Type::Integer(pointer_number, bits1) => match result_type {
 					Type::Integer(_, bits2) => {
-						if bits1 > bits2 { // no bit truncating yet
+						if bits1 == bits2 {
+							value
+						} else if bits1 > bits2 { // no bit truncating yet
 							Value {
 								type_enum: Type::Integer(pointer_number, bits2),
 								value: LLVMBuildTrunc(
