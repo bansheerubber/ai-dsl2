@@ -155,7 +155,7 @@ impl Module {
 
 			// test argument types
 			for (arg, arg_type) in arg_types.iter().zip(function_argument_types.iter()) {
-				if arg.zero_pointer_number() != arg_type.zero_pointer_number() { // TODO figure out the pointer number stuff
+				if !arg.is_compatible(arg_type) {
 					panic!("Incorrect function argument types {:?} {:?}", arg_types, function_argument_types);
 				}
 			}

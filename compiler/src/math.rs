@@ -548,7 +548,27 @@ impl Module {
 						),
 					},
 					Type::Float(_) => value,
-					_ => todo!("{:?}", result_type),
+					_ => todo!("{:?} {:?}", value.type_enum, result_type),
+				},
+				Type::FloatArray(_) => {
+					match result_type {
+						Type::Float(pointer_number) => {
+							if pointer_number == 1 {
+								Value {
+									type_enum: Type::Float(1),
+									value: LLVMBuildBitCast(
+										builder.get_builder(),
+										value.value,
+										self.to_llvm_type(Type::Float(1)),
+										self.string_table.to_llvm_string("bitcast"),
+									),
+								}
+							} else {
+								todo!();
+							}
+						},
+						_ => todo!("{:?} {:?}", value.type_enum, result_type),
+					}
 				},
 				Type::Integer(pointer_number, bits1) => match result_type {
 					Type::Integer(_, bits2) => {
@@ -586,9 +606,9 @@ impl Module {
 							self.string_table.to_llvm_string("fcast")
 						),
 					},
-					_ => todo!(),
+					_ => todo!("{:?} {:?}", value.type_enum, result_type),
 				}
-				_ => todo!(),
+				_ => todo!("{:?} {:?}", value.type_enum, result_type),
 			}
 		}
 	}

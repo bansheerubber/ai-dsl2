@@ -43,6 +43,7 @@ impl Module {
 				},
 				Type::Float(0) => LLVMDoubleType(),
 				Type::Float(1) => LLVMPointerType(LLVMDoubleType(), 64),
+				Type::FloatArray(size) => LLVMArrayType(LLVMDoubleType(), size as u32),
 				Type::Integer(0, bits) => LLVMIntType(bits),
 				Type::Integer(1, bits) => LLVMPointerType(LLVMIntType(bits), 64),
 				Type::Void => LLVMVoidType(),
