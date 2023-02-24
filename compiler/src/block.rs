@@ -144,6 +144,17 @@ impl Module {
 			let builder = Builder::new();
 			builder.seek_to_end(block);
 
+			if args.len() != function.argument_types.len() {
+				panic!("Incorrect number of function arguments");
+			}
+
+			// test argument types
+			for (arg, arg_type) in args.iter().zip(function.argument_types.iter()) {
+				if &arg.type_enum != arg_type {
+					panic!("Incorrect function argument types");
+				}
+			}
+
 			let mut llvm_args = vec![];
 			for arg in args {
 				llvm_args.push(arg.value);
