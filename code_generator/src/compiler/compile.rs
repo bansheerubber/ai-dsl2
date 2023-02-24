@@ -29,6 +29,10 @@ impl CompilationContext<'_> {
 	pub fn new<'a>(input_filename: &str, state: &'a mut parser::ParserState<'a>) -> CompilationContext<'a> {
 		let mut module = Module::new("main");
 
+		module.create_extern_function(
+			"_airt_print_float", &vec![Type::Float(0)], Type::Void
+		);
+
 		CompilationContext {
 			placeholder_evaluation_float: module.create_extern_function(
 				"airt_predict_float", &vec![Type::CString(0), Type::Integer(0, 64), Type::Integer(0, 64)], Type::Float(0)
