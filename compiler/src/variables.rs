@@ -65,6 +65,25 @@ impl Module {
 		}
 	}
 
+	pub fn add_immutable_array(&mut self, block: Block, type_enum: Type, element_count: usize) -> Value {
+		// TODO we're going to use the stack, even for immutable variables, for ease of design
+		unsafe {
+			let builder = Builder::new();
+			builder.seek_to_end(block);
+
+			let value = Value {
+				type_enum: type_enum.to_array(element_count),
+				value: LLVMBuildAlloca(
+					builder.get_builder(),
+					LLVMArrayType(self.to_llvm_type(type_enum), element_count as u32),
+					self.string_table.to_llvm_string("array")
+				),
+			};
+
+			return value;
+		}
+	}
+
 	pub fn add_mutable_variable(&mut self, block: Block, name: &str, type_enum: Type) -> Value {
 		unsafe {
 			let builder = Builder::new();
@@ -154,6 +173,41 @@ impl Module {
 			Ok(Value {
 				type_enum: Type::Void,
 				value: LLVMBuildStore(builder.get_builder(), value.value, location.value),
+			})
+		}
+	}
+
+	pub fn add_store_to_array(
+		&mut self, block: Block, array: Value, index: usize, value: Value
+	) -> Result<Value, MathError> {
+		unsafe {
+			let builder = Builder::new();
+			builder.seek_to_end(block);
+
+			let scalar = array.type_enum.to_scalar();
+
+			let value = self.math_resolve_value(block, value, scalar); // resolve & convert type
+			if value.type_enum != scalar {
+				return Err(MathError::IncompatibleTypes(scalar, value.type_enum));
+			}
+
+			let mut args = [
+				LLVMConstInt(self.to_llvm_type(Type::Integer(0, 64)), 0, 0),
+				LLVMConstInt(self.to_llvm_type(Type::Integer(0, 64)), index as u64, 0),
+			];
+
+			let array_element = LLVMBuildGEP2(
+				builder.get_builder(),
+				self.to_llvm_type(array.type_enum),
+				array.value,
+				args.as_mut_ptr(),
+				2,
+				self.string_table.to_llvm_string("element")
+			);
+
+			Ok(Value {
+				type_enum: Type::Void,
+				value: LLVMBuildStore(builder.get_builder(), value.value, array_element),
 			})
 		}
 	}
