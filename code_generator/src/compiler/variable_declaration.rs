@@ -17,20 +17,35 @@ impl VariableDeclaration {
 		let mut variable_name = "";
 		let mut variable_type = "";
 
-		let pairs = pair.into_inner();
-		for pair in pairs.clone() {
-			if pair.as_rule() == parser::Rule::token {
-				variable_name = pair.as_str();
-			} else if pair.as_rule() == parser::Rule::type_token {
-				variable_type = pair.as_str();
+		if context.current_block.is_none() { // compile a global variable declaration
+			let pairs = pair.into_inner();
+			for pair in pairs.clone() {
+				if pair.as_rule() == parser::Rule::token {
+					variable_name = pair.as_str();
+				} else if pair.as_rule() == parser::Rule::type_token {
+					variable_type = pair.as_str();
+				}
 			}
+
+			context.module.add_global_variable(
+				variable_name, convert_type_name(variable_type)
+			);
+		} else { // compile a local variable declaration
+			let pairs = pair.into_inner();
+			for pair in pairs.clone() {
+				if pair.as_rule() == parser::Rule::token {
+					variable_name = pair.as_str();
+				} else if pair.as_rule() == parser::Rule::type_token {
+					variable_type = pair.as_str();
+				}
+			}
+
+			let variable = context.module.add_mutable_variable(
+				context.current_block.unwrap(), variable_name, convert_type_name(variable_type)
+			);
+
+			let value = compile_pair(context, pairs.last().unwrap()).unwrap();
+			context.module.add_store(context.current_block.unwrap(), variable, value).unwrap();
 		}
-
-		let variable = context.module.add_mutable_variable(
-			context.current_block.unwrap(), variable_name, convert_type_name(variable_type)
-		);
-
-		let value = compile_pair(context, pairs.last().unwrap()).unwrap();
-		context.module.add_store(context.current_block.unwrap(), variable, value).unwrap();
 	}
 }

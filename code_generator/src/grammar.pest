@@ -16,7 +16,7 @@ learned_value = { "#" }
 
 token = @{ (alpha | special) ~ (alpha | digit | special)* }
 type_token = @{ (alpha | special) ~ (alpha | digit | special)* }
-variable_declaration = { "let" ~ token ~ ":" ~ type_token ~ "=" ~ math }
+variable_declaration = { "let" ~ token ~ ":" ~ type_token ~ ("=" ~ math)? }
 
 function_args = { (math ~ ",")* ~ math }
 function_call = { token ~ "(" ~ function_args? ~ ")" }
