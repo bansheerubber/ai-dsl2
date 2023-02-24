@@ -11,8 +11,17 @@ pub enum Type {
 }
 
 impl Type {
-	pub fn get_pointer_number(&self) -> Pointers {
-		match *self {
+	pub fn increment_pointer_number(self) -> Self {
+		match self {
+			Type::CString(p) => Type::CString(p + 1),
+			Type::Float(p) => Type::Float(p + 1),
+			Type::Integer(p, bits) => Type::Integer(p + 1, bits),
+			Type::Void => Type::Void,
+		}
+	}
+
+	pub fn get_pointer_number(self) -> Pointers {
+		match self {
 			Type::CString(number) => number,
 			Type::Float(number) => number,
 			Type::Integer(number, _) => number,
@@ -20,8 +29,8 @@ impl Type {
 		}
 	}
 
-	pub fn zero_pointer_number(&self) -> Self {
-		match *self {
+	pub fn zero_pointer_number(self) -> Self {
+		match self {
 			Type::CString(_) => Type::CString(0),
 			Type::Float(_) => Type::Float(0),
 			Type::Integer(_, bits) => Type::Integer(0, bits),
@@ -29,8 +38,8 @@ impl Type {
 		}
 	}
 
-	pub fn zero_bits(&self) -> Self {
-		match *self {
+	pub fn zero_bits(self) -> Self {
+		match self {
 			Type::CString(pointer_number) => Type::CString(pointer_number),
 			Type::Float(pointer_number) => Type::Float(pointer_number),
 			Type::Integer(pointer_number, _) => Type::Integer(pointer_number, 0),
