@@ -15,8 +15,9 @@ impl LearnedValue {
 			context.module.create_immediate_integer(0),
 		];
 
+		// TODO do type stuff here
 		let learned_value = context.module.add_function_call(
-			context.current_block.unwrap(), &context.placeholder_evaluation_int, &mut args
+			context.current_block.unwrap(), &context.placeholder_evaluation_float, &mut args
 		);
 
 		let function = context.module.function_table.get_function_mut(&context.current_function.as_ref().unwrap()).unwrap();
