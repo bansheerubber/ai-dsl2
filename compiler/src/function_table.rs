@@ -175,6 +175,14 @@ pub struct FunctionKey {
 	name: String,
 }
 
+impl FunctionKey {
+	pub fn new(name: &str) -> Self {
+		FunctionKey {
+			name: name.to_string(),
+		}
+	}
+}
+
 #[derive(Debug, Default)]
 pub struct FunctionTable {
 	functions: HashMap<FunctionKey, Function>,
