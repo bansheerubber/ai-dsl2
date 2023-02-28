@@ -4,6 +4,11 @@ AI_DSL_RUNTIME="../../ai-dsl-runtime"
 LIBTORCH="/home/me/Projects/ai-dsl-runtime/libtorch" # location of libtorch installation (from https://pytorch.org/cppdocs/installing.html)
 CUDA="/opt/cuda" # location of cuda installation
 
+pushd .
+cd ../
+cargo run
+popd
+
 cp ../main.bc main.bc
 
 llc -filetype=obj --relocation-model=pic main.bc
