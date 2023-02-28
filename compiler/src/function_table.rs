@@ -20,11 +20,13 @@ pub struct Function {
 
 	pub argument_types: Vec<Type>,
 	pub argument_values: Vec<Value>,
-	function: LLVMValueRef,
-	function_type: LLVMTypeRef,
+	pub(crate) function: LLVMValueRef,
+	pub(crate) function_type: LLVMTypeRef,
 	pub learned_values: Vec<Value>,
 	pub name: String,
 	pub return_type: Type,
+
+	pub check_arguments: bool, // TODO remove this
 }
 
 impl Function {
@@ -117,6 +119,8 @@ impl Module {
 			learned_values: Vec::new(),
 			name: self.transform_function_name(name),
 			return_type,
+
+			check_arguments: true,
 		};
 
 		self.function_table.add_function(&self.transform_function_name(name), function)
@@ -164,6 +168,8 @@ impl Module {
 			learned_values: vec![],
 			name: String::from(name),
 			return_type,
+
+			check_arguments: true,
 		};
 
 		self.function_table.add_function(name, function)

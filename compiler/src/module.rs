@@ -1,8 +1,9 @@
+use std::collections::HashMap;
 use llvm_sys::bit_writer::*;
 use llvm_sys::core::*;
 use llvm_sys::prelude::*;
 
-use crate::{ Block, Builder, FunctionKey, FunctionTable, TerminalInstruction, Type, Value, VariableTable, };
+use crate::{ Block, Builder, Function, FunctionKey, FunctionTable, TerminalInstruction, Type, Value, VariableTable, };
 use crate::strings::StringTable;
 
 #[derive(Debug)]
@@ -60,18 +61,125 @@ impl Module {
 			Type::Void
 		);
 
-		let airt_init = self.create_extern_function(
-			"airt_init",
-			&vec![],
-			Type::Void
-		);
+		// TODO remove this inline
+		let airt_init = {
+			let function_type;
+			let function;
+			unsafe {
+				let mut arguments = vec![
+					LLVMPointerType(LLVMFunctionType(self.to_llvm_type(Type::Integer(0, 64)), [].as_mut_ptr(), 0 as u32, 0), 64),
+					LLVMPointerType(LLVMFunctionType(self.to_llvm_type(Type::Float(0)), [].as_mut_ptr(), 0 as u32, 0), 64),
+				];
+
+				function_type = LLVMFunctionType(
+					self.to_llvm_type(Type::Void), arguments.as_mut_ptr(), arguments.len() as u32, 0
+				);
+
+				function = LLVMAddFunction(
+					self.get_module(),
+					self.string_table.to_llvm_string("airt_init"),
+					function_type
+				);
+			}
+
+			let function = Function {
+				argument_types: Vec::new(),
+				argument_values: Vec::new(),
+				blocks: HashMap::new(),
+				block_terminals: HashMap::new(),
+				function,
+				function_type,
+				learned_values: vec![],
+				name: String::from("airt_init"),
+				return_type: Type::Void,
+
+				check_arguments: false,
+			};
+
+			self.function_table.add_function("airt_init", function)
+		};
+
+		let airt_train = self.create_extern_function("airt_train", &vec![], Type::Void);
 
 		// generate main function
 		let main_function = self.create_extern_function("main", &vec![], Type::Integer(0, 64));
 		let main_block = self.new_block("main", &main_function);
 
 		// add call to `airt_init`
-		self.add_function_call(main_block, &airt_init, &mut vec![]);
+		let reset_function = self.function_table.get_function(&FunctionKey::new("_main")).unwrap().function;
+		let tick_function = self.function_table.get_function(&FunctionKey::new("_tick")).unwrap().function;
+
+		let reset_function_value = unsafe {
+			let builder = Builder::new();
+			builder.seek_to_end(main_block);
+
+			let location = LLVMBuildAlloca(
+				builder.get_builder(),
+				LLVMPointerType(
+					LLVMFunctionType(self.to_llvm_type(Type::Integer(0, 64)), [].as_mut_ptr(), 0 as u32, 0),
+					64
+				),
+				self.string_table.to_llvm_string("reset_function")
+			);
+
+			LLVMBuildStore(
+				builder.get_builder(),
+				reset_function,
+				location,
+			);
+
+			LLVMBuildLoad2(
+				builder.get_builder(),
+				LLVMPointerType(
+					LLVMFunctionType(self.to_llvm_type(Type::Integer(0, 64)), [].as_mut_ptr(), 0 as u32, 0),
+					64
+				),
+				location,
+				self.string_table.to_llvm_string("reset_function_deref")
+			)
+		};
+
+		let tick_function_value = unsafe {
+			let builder = Builder::new();
+			builder.seek_to_end(main_block);
+
+			let location = LLVMBuildAlloca(
+				builder.get_builder(),
+				LLVMPointerType(
+					LLVMFunctionType(self.to_llvm_type(Type::Float(0)), [].as_mut_ptr(), 0 as u32, 0),
+					64
+				),
+				self.string_table.to_llvm_string("tick_function")
+			);
+
+			LLVMBuildStore(
+				builder.get_builder(),
+				tick_function,
+				location,
+			);
+
+			LLVMBuildLoad2(
+				builder.get_builder(),
+				LLVMPointerType(
+					LLVMFunctionType(self.to_llvm_type(Type::Float(0)), [].as_mut_ptr(), 0 as u32, 0),
+					64
+				),
+				location,
+				self.string_table.to_llvm_string("tick_function_deref")
+			)
+		};
+
+		self.add_function_call(
+			main_block,
+			&airt_init,
+			&mut vec![Value {
+				type_enum: Type::Void,
+				value: reset_function_value,
+			}, Value {
+				type_enum: Type::Void,
+				value: tick_function_value,
+			}]
+		);
 
 		// TODO figure out how to make this block less messy
 		let name_globals = {
@@ -113,6 +221,9 @@ impl Module {
 
 		// call `_main`
 		self.add_function_call(main_block, &FunctionKey::new("_main"), &mut []);
+
+		// call `airt_train`
+		self.add_function_call(main_block, &airt_train, &mut []);
 
 		// return 0
 		self.add_return(main_block, self.create_immediate_integer(0));

@@ -143,11 +143,12 @@ impl Module {
 			let builder = Builder::new();
 			builder.seek_to_end(block);
 
+			let check_arguments = self.function_table.get_function(&function).unwrap().check_arguments;
 			let function_argument_types = self.function_table.get_function(&function).unwrap().argument_types.iter()
 				.map(|x| *x)
 				.collect::<Vec<Type>>();
 
-			if args.len() != function_argument_types.len() {
+			if args.len() != function_argument_types.len() && check_arguments {
 				panic!("Incorrect number of function arguments");
 			}
 
@@ -155,15 +156,23 @@ impl Module {
 
 			// test argument types
 			for (arg, arg_type) in arg_types.iter().zip(function_argument_types.iter()) {
-				if !arg.is_compatible(arg_type) {
+				if !arg.is_compatible(arg_type) && check_arguments {
 					panic!("Incorrect function argument types {:?} {:?}", arg_types, function_argument_types);
 				}
 			}
 
 			let mut llvm_args = vec![];
-			for (arg, arg_type) in args.iter().zip(function_argument_types.iter()) {
-				llvm_args.push(self.math_resolve_value(block, *arg, *arg_type).value);
+
+			if check_arguments {
+				for (arg, arg_type) in args.iter().zip(function_argument_types.iter()) {
+					llvm_args.push(self.math_resolve_value(block, *arg, *arg_type).value);
+				}
+			} else {
+				for arg in args.iter() {
+					llvm_args.push(arg.value);
+				}
 			}
+
 
 			let function = self.function_table.get_function(&function).unwrap();
 
