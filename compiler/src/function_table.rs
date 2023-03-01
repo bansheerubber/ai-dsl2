@@ -178,7 +178,7 @@ impl Module {
 
 #[derive(Clone, Debug, Default, Eq, Hash, PartialEq)]
 pub struct FunctionKey {
-	name: String,
+	pub name: String,
 }
 
 impl FunctionKey {

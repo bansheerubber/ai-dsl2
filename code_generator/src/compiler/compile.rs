@@ -18,12 +18,16 @@ use crate::parser::{ self, DSLParser };
 
 pub struct CompilationContext<'a> {
 	pub airt_handle_function_call: FunctionKey,
+	pub airt_finish_function_call: FunctionKey,
 	pub current_block: Option<Block>,
 	pub current_function: Option<FunctionKey>,
 	pub module: Module,
 	pub parser: DSLParser<'a>,
 	pub placeholder_evaluation_float: FunctionKey,
 	pub placeholder_evaluation_int: FunctionKey,
+	// used to determine if we should insert an airt function call before every return in a function. TODO rethink how
+	// this is implemented?
+	pub prediction_index: Option<Value>,
 }
 
 impl CompilationContext<'_> {
@@ -42,6 +46,9 @@ impl CompilationContext<'_> {
 			airt_handle_function_call: module.create_extern_function(
 				"airt_handle_function_call", &vec![Type::CString(0), Type::Float(1)], Type::Integer(0, 64)
 			),
+			airt_finish_function_call: module.create_extern_function(
+				"airt_finish_function_call", &vec![Type::CString(0), Type::Integer(0, 64)], Type::Void
+			),
 			placeholder_evaluation_float: module.create_extern_function(
 				"airt_predict_float", &vec![Type::CString(0), Type::Integer(0, 64), Type::Integer(0, 64)], Type::Float(0)
 			),
@@ -53,6 +60,22 @@ impl CompilationContext<'_> {
 			current_function: None,
 			module,
 			parser: state.parse_file(&input_filename),
+			prediction_index: None,
+		}
+	}
+
+	pub fn add_finish_function_call(&mut self) {
+		if let Some(prediction_index) = self.prediction_index {
+			let function_name = &self.current_function.as_ref().unwrap().name;
+
+			// TODO cache the name
+			let allocated_name = self.module.create_global_string(self.current_block.unwrap(), function_name);
+
+			self.module.add_function_call(
+				self.current_block.unwrap(),
+				&self.airt_finish_function_call,
+				&mut [allocated_name, prediction_index]
+			);
 		}
 	}
 }

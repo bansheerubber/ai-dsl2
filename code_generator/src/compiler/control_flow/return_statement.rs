@@ -10,6 +10,8 @@ pub struct Return {
 
 impl Return {
 	pub fn compile(context: &mut CompilationContext, pair: Pair<parser::Rule>) -> Return {
+		context.add_finish_function_call();
+
 		let pairs = pair.into_inner();
 		let value = compile_pair(context, pairs.last().unwrap()).unwrap();
 
