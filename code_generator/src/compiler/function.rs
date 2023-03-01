@@ -1,5 +1,5 @@
 use ai_dsl2_compiler::Type;
-use pest::iterators::Pair;
+use pest::iterators::{Pair, Pairs};
 
 use crate::compiler::{ CompilationContext, compile_pairs };
 use crate::parser;
@@ -53,7 +53,11 @@ impl Function {
 			context.module.add_argument(block, &argument_name, argument_type, argument_value);
 		}
 
-		if values.len() > 0 {
+		let has_learned_values = Function::look_for_learned_values(
+			pairs.clone().last().unwrap().into_inner()
+		);
+
+		let prediction_index = if values.len() > 0 && has_learned_values { // call `airt_handle_function_call`
 			// create array of arguments
 			let array = context.module.add_immutable_array(
 				context.current_block.unwrap(),
@@ -66,24 +70,46 @@ impl Function {
 				context.module.add_store_to_array(block, array, i, value).unwrap();
 			}
 
+			// TODO cache the name
 			let allocated_name = context.module.create_global_string(
 				context.current_block.unwrap(), &context.module.transform_function_name(name)
 			);
 
-			let prediction_index = context.module.add_function_call(
+			Some(context.module.add_function_call(
 				context.current_block.unwrap(),
 				&context.airt_handle_function_call,
 				&mut [allocated_name, array]
-			);
-		}
+			))
+		} else {
+			None
+		};
+
+		context.prediction_index = prediction_index;
 
 		compile_pairs(context, pairs.last().unwrap().into_inner());
 
 		let function = context.module.function_table.get_function(&context.current_function.as_ref().unwrap()).unwrap();
 		if function.has_default_block_terminal(context.current_block.unwrap()) {
+			context.add_finish_function_call();
 			context.module.add_return_void(context.current_block.unwrap());
 		}
 
 		context.current_function = None;
+	}
+
+	// looks for learned values recursively, determines whether or not we process a function in the airt
+	fn look_for_learned_values(pairs: Pairs<parser::Rule>) -> bool {
+		for pair in pairs {
+			if pair.as_rule() == parser::Rule::learned_value {
+				return true;
+			}
+
+			let result = Function::look_for_learned_values(pair.clone().into_inner());
+			if result {
+				return true;
+			}
+		}
+
+		return false;
 	}
 }
