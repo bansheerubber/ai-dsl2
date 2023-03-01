@@ -34,6 +34,10 @@ impl ElseIfStatement {
 }
 
 impl ControlFlow for ElseIfStatement {
+	fn get_start_block(&self) -> Block {
+		self.body_block
+	}
+
 	fn get_body_block(&self) -> Block {
 		self.body_block
 	}

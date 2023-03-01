@@ -12,6 +12,7 @@ pub struct IfStatement {
 	body_block: Block,
 	conditional_block: Block,
 	conditional_value: Value,
+	start_block: Block,
 }
 
 impl IfStatement {
@@ -31,9 +32,10 @@ impl IfStatement {
 
 		let mut chain: Vec<Box<dyn ControlFlow>> = vec![Box::new(
 			IfStatement {
-				body_block: context.current_block.unwrap(), // let the things we just compiled control which block we're now in
+				body_block: context.current_block.unwrap(),
 				conditional_block,
 				conditional_value,
+				start_block: body_block,
 			}
 		)];
 
@@ -71,7 +73,7 @@ impl IfStatement {
 				context.module.add_branch_if_true(
 					conditional_block,
 					control_flow.get_conditional_value().unwrap(),
-					control_flow.get_body_block(),
+					control_flow.get_start_block(),
 					jump_if_false
 				);
 			}
@@ -91,11 +93,16 @@ impl IfStatement {
 			body_block,
 			conditional_block,
 			conditional_value,
+			start_block: body_block, // TODO does this break stuff?
 		}
 	}
 }
 
 impl ControlFlow for IfStatement {
+	fn get_start_block(&self) -> Block {
+		self.start_block
+	}
+
 	fn get_body_block(&self) -> Block {
 		self.body_block
 	}

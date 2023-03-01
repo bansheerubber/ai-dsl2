@@ -27,6 +27,10 @@ impl ElseStatement {
 }
 
 impl ControlFlow for ElseStatement {
+	fn get_start_block(&self) -> Block {
+		self.body
+	}
+
 	fn get_body_block(&self) -> Block {
 		self.body
 	}
