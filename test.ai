@@ -1,16 +1,185 @@
-function main(): int {
-	// let frog: int = (1 * 5 + 1 && 20 && 20 - 20) || (1 + 1 - 2);
+let car1_acceleration_default: float;
 
-	let test: int = 5;
-	if (test < 5) {
-		let value: int = 1;
-	} else if (test < 10) {
-		let value: int = 2;
-	} else if (test < 15) {
-		let value: int = 3;
-	} else {
-		let value: int = 4;
+let car1_position: float;
+let car1_acceleration: float;
+let car1_acceleration_direction: int;
+let car1_speed: float;
+let car1_desired_speed: float;
+let car1_max_speed: float;
+let car1_next_lane: int;
+let car1_change_lane_start: int;
+let car1_current_tick: int;
+
+let car2_position: float;
+let car2_acceleration: float;
+let car2_acceleration_direction: int;
+let car2_speed: float;
+let car2_desired_speed: float;
+let car2_max_speed: float;
+let car2_next_lane: int;
+let car2_change_lane_start: int;
+let car2_current_tick: int;
+
+function update_position(
+	position: float,
+	acceleration: float,
+	acceleration_direction: int,
+	speed: float,
+	desired_speed: float,
+	max_speed: float,
+	next_lane: int,
+	change_lane_start: int,
+	current_tick: int
+): float {
+	return position + speed * 0.016;
+}
+
+function update_speed(
+	position: float,
+	acceleration: float,
+	acceleration_direction: int,
+	speed: float,
+	desired_speed: float,
+	max_speed: float,
+	next_lane: int,
+	change_lane_start: int,
+	current_tick: int
+): float {
+	return speed + acceleration * 0.016;
+}
+
+function use_brake(delta_position: float, other_car_speed: float): int {
+	if (delta_position < #) {
+		return 1;
 	}
+
+	return 0;
+}
+
+function reward(
+	position: float,
+	acceleration: float,
+	acceleration_direction: int,
+	speed: float,
+	desired_speed: float,
+	max_speed: float,
+	next_lane: int,
+	change_lane_start: int,
+	current_tick: int
+): float {
+	let reward: float = 100.0 - (desired_speed - speed);
+
+	if (reward > 100) {
+		reward = 100.0;
+	} else if (reward < 0) {
+		reward = 0.0;
+	}
+
+	return reward;
+}
+
+function tick(): float {
+	car1_position = update_position(
+		car1_position,
+		car1_acceleration,
+		car1_acceleration_direction,
+		car1_speed,
+		car1_desired_speed,
+		car1_max_speed,
+		car1_next_lane,
+		car1_change_lane_start,
+		car1_current_tick
+	);
+
+	car1_speed = update_speed(
+		car1_position,
+		car1_acceleration,
+		car1_acceleration_direction,
+		car1_speed,
+		car1_desired_speed,
+		car1_max_speed,
+		car1_next_lane,
+		car1_change_lane_start,
+		car1_current_tick
+	);
+
+	car2_position = update_position(
+		car2_position,
+		car2_acceleration,
+		car2_acceleration_direction,
+		car2_speed,
+		car2_desired_speed,
+		car2_max_speed,
+		car2_next_lane,
+		car2_change_lane_start,
+		car2_current_tick
+	);
+
+	car2_speed = update_speed(
+		car2_position,
+		car2_acceleration,
+		car2_acceleration_direction,
+		car2_speed,
+		car2_desired_speed,
+		car2_max_speed,
+		car2_next_lane,
+		car2_change_lane_start,
+		car2_current_tick
+	);
+
+	if (use_brake(car2_position - car1_position, car2_speed)) {
+		if (car1_speed < 0.0) {
+			car1_acceleration = 0.0;
+		} else {
+			car1_acceleration = -500.0;
+		}
+	} else if (car1_speed > car1_max_speed) {
+		car1_acceleration = 0.0;
+	} else {
+		car1_acceleration = car1_acceleration_default;
+	}
+
+	if (car1_position > car2_position) {
+		return -10000.0;
+	}
+
+	airt_log_simulation(car1_position, car2_position);
+
+	return reward(
+		car1_position,
+		car1_acceleration,
+		car1_acceleration_direction,
+		car1_speed,
+		car1_desired_speed,
+		car1_max_speed,
+		car1_next_lane,
+		car1_change_lane_start,
+		car1_current_tick
+	);
+}
+
+function main(): int {
+	car1_acceleration_default = 30.0;
+
+	car1_position = 0.0;
+	car1_acceleration = car1_acceleration_default;
+	car1_acceleration_direction = 0;
+	car1_speed = 0.0;
+	car1_desired_speed = 70.0;
+	car1_max_speed = 70.0;
+	car1_next_lane = 0;
+	car1_change_lane_start = 0;
+	car1_current_tick = 0;
+
+	car2_position = 50.0;
+	car2_acceleration = 0.0;
+	car2_acceleration_direction = 0;
+	car2_speed = airt_random_float(40.0, 70.0);
+	car2_desired_speed = 0.0;
+	car2_max_speed = 0.0;
+	car2_next_lane = 0;
+	car2_change_lane_start = 0;
+	car2_current_tick = 0;
 
 	return 0;
 }
