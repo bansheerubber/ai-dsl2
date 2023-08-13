@@ -42,6 +42,14 @@ impl CompilationContext<'_> {
 			"_airt_print_int", &vec![Type::Integer(0, 64)], Type::Void
 		);
 
+		module.create_extern_function(
+			"_airt_random_float", &vec![Type::Float(0), Type::Float(0)], Type::Float(0)
+		);
+
+		module.create_extern_function(
+			"_airt_log_simulation", &vec![Type::Float(0), Type::Float(0)], Type::Void
+		);
+
 		CompilationContext {
 			airt_handle_function_call: module.create_extern_function(
 				"airt_handle_function_call", &vec![Type::CString(0), Type::Float(1)], Type::Integer(0, 64)
