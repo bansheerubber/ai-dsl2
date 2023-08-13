@@ -5,6 +5,7 @@ pub mod function_call;
 pub mod learned_value;
 pub mod loops;
 pub mod math;
+pub mod struct_declaration;
 pub mod variable_assignment;
 pub mod variable_declaration;
 
@@ -17,6 +18,7 @@ pub use loops::for_loop::ForLoop;
 pub use function::Function;
 pub use function_call::FunctionCall;
 pub use math::Math;
+pub use struct_declaration::StructDeclaration;
 pub use variable_assignment::VariableAssignment;
 pub use variable_declaration::VariableDeclaration;
 pub use loops::while_loop::WhileLoop;

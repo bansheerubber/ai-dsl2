@@ -9,6 +9,7 @@ use crate::compiler::{
 	LearnedValue,
 	Math,
 	Return,
+	StructDeclaration,
 	VariableAssignment,
 	VariableDeclaration,
 	VoidReturn,
@@ -111,6 +112,16 @@ pub fn compile_pair(context: &mut CompilationContext, pair: Pair<parser::Rule>) 
 		parser::Rule::math => {
 			Some(Math::compile(context, pair))
 		},
+		parser::Rule::property_assignment => {
+			Some(VariableAssignment::compile(context, pair))
+		},
+		parser::Rule::property_access => {
+			return None;
+		},
+		parser::Rule::struct_declaration => {
+			StructDeclaration::compile(context, pair);
+			return None;
+		}
 		parser::Rule::return_statement => {
 			Return::compile(context, pair);
 			return None;

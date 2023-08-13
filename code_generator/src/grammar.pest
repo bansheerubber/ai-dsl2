@@ -15,6 +15,7 @@ string_literal = @{ (("'") ~ ('\x00'..'\x26' | '\x28'..'\xFF')* ~ ("'")) | (("\"
 learned_value = { "#" }
 
 token = @{ (alpha | special) ~ (alpha | digit | special)* }
+property_access = @{ token ~ "." ~ token }
 type_token = @{ (alpha | special) ~ (alpha | digit | special)* }
 variable_declaration = { "let" ~ token ~ ":" ~ type_token ~ ("=" ~ math)? }
 
@@ -22,6 +23,7 @@ function_args = { (math ~ ",")* ~ math }
 function_call = { token ~ "(" ~ function_args? ~ ")" }
 
 assignment_operator = { "=" | "+=" | "-=" | "*=" | "/=" | "&&=" | "||=" | "&=" | "|=" | "^=" }
+property_assignment = { property_access ~ assignment_operator ~ math }
 variable_assignment = { token ~ assignment_operator ~ math }
 
 addition = { "+" }
@@ -47,11 +49,11 @@ logical_not = { "!" }
 bitwise_not = { "~" }
 unary_operator = _{ negative | logical_not | bitwise_not }
 
-operand = _{ learned_value | number | string_literal | function_call | token }
+operand = _{ learned_value | number | string_literal | function_call | property_access | token }
 primary = _{ operand | ( "(" ~ math ~ ")") }
 math = { unary_operator? ~ primary ~ (binary_operator ~ unary_operator? ~ primary)* }
 
-expression = _{ variable_declaration | variable_assignment | math }
+expression = _{ variable_declaration | variable_assignment | property_assignment | math }
 
 if_statement_body = { body* }
 if_statement = { "if" ~ "(" ~ expression ~ ")" ~ "{" ~ if_statement_body ~ "}" ~ else_if_statement* ~ else_statement? }
@@ -66,11 +68,14 @@ function_declaration_args = { (token ~ ":" ~ type_token ~ ",")*  ~ token ~ ":" ~
 function_body = { body* }
 function = { "function" ~ token ~ "(" ~ function_declaration_args? ~ ")" ~ (":" ~ type_token)? ~ "{" ~ function_body ~ "}" }
 
+struct_field_declaration = { token ~ ":" ~ type_token ~ "," }
+struct_declaration = { "struct" ~ token ~ "{" ~ struct_field_declaration* ~ "}" }
+
 return_statement = { "return" ~ math }
 void_return_statement = { "return" }
 loop_control = { "break" | "continue" }
 
 line = _{ (loop_control ~ ";") | (return_statement ~ ";") | (void_return_statement ~ ";") | (expression ~ ";") }
-body = _{ function | if_statement | while_loop | for_loop | line }
+body = _{ function | if_statement | while_loop | for_loop | struct_declaration | line }
 
 program = _{ SOI ~ body+ ~ EOI }
