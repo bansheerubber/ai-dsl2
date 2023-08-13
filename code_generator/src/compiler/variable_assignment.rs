@@ -8,6 +8,8 @@ pub struct VariableAssignment;
 
 impl VariableAssignment {
 	pub fn compile(context: &mut CompilationContext, pair: Pair<parser::Rule>) -> Value {
+		let property_assignment = pair.as_rule() == parser::Rule::property_assignment;
+
 		let mut pairs = pair.into_inner();
 
 		let variable_name = pairs.next().unwrap().as_str();

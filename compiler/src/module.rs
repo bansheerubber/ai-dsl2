@@ -77,8 +77,8 @@ impl Module {
 			let function;
 			unsafe {
 				let mut arguments = vec![
-					LLVMPointerType(LLVMFunctionType(self.to_llvm_type(Type::Integer(0, 64)), [].as_mut_ptr(), 0 as u32, 0), 64),
-					LLVMPointerType(LLVMFunctionType(self.to_llvm_type(Type::Float(0)), [].as_mut_ptr(), 0 as u32, 0), 64),
+					LLVMPointerType(LLVMFunctionType(self.to_llvm_type(Type::Integer(0, 64)), [].as_mut_ptr(), 0 as u32, 0), 0),
+					LLVMPointerType(LLVMFunctionType(self.to_llvm_type(Type::Float(0)), [].as_mut_ptr(), 0 as u32, 0), 0),
 				];
 
 				function_type = LLVMFunctionType(
@@ -127,7 +127,7 @@ impl Module {
 				builder.get_builder(),
 				LLVMPointerType(
 					LLVMFunctionType(self.to_llvm_type(Type::Integer(0, 64)), [].as_mut_ptr(), 0 as u32, 0),
-					64
+					0
 				),
 				self.string_table.to_llvm_string("reset_function")
 			);
@@ -142,7 +142,7 @@ impl Module {
 				builder.get_builder(),
 				LLVMPointerType(
 					LLVMFunctionType(self.to_llvm_type(Type::Integer(0, 64)), [].as_mut_ptr(), 0 as u32, 0),
-					64
+					0
 				),
 				location,
 				self.string_table.to_llvm_string("reset_function_deref")
@@ -157,7 +157,7 @@ impl Module {
 				builder.get_builder(),
 				LLVMPointerType(
 					LLVMFunctionType(self.to_llvm_type(Type::Float(0)), [].as_mut_ptr(), 0 as u32, 0),
-					64
+					0
 				),
 				self.string_table.to_llvm_string("tick_function")
 			);
@@ -172,7 +172,7 @@ impl Module {
 				builder.get_builder(),
 				LLVMPointerType(
 					LLVMFunctionType(self.to_llvm_type(Type::Float(0)), [].as_mut_ptr(), 0 as u32, 0),
-					64
+					0
 				),
 				location,
 				self.string_table.to_llvm_string("tick_function_deref")
