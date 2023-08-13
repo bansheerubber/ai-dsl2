@@ -1,0 +1,2 @@
+[env]
+LLVM_SYS_140_PREFIX = "/home/me/llvm"
