@@ -1,3 +1,4 @@
+use ai_dsl2_compiler::Type;
 use pest::iterators::Pair;
 
 use crate::compiler::{ CompilationContext, compile_pair };
@@ -28,7 +29,7 @@ impl VariableDeclaration {
 			}
 
 			context.module.add_global_variable(
-				variable_name, convert_type_name(variable_type)
+				variable_name, convert_type_name(&context.module, variable_type)
 			);
 		} else { // compile a local variable declaration
 			let pairs = pair.into_inner();
@@ -40,8 +41,9 @@ impl VariableDeclaration {
 				}
 			}
 
+			let variable_type = convert_type_name(&context.module, variable_type);
 			let variable = context.module.add_mutable_variable(
-				context.current_block.unwrap(), variable_name, convert_type_name(variable_type)
+				context.current_block.unwrap(), variable_name, variable_type
 			);
 
 			let value = compile_pair(context, pairs.last().unwrap()).unwrap();

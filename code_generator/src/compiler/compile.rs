@@ -8,6 +8,7 @@ use crate::compiler::{
 	IfStatement,
 	LearnedValue,
 	Math,
+	NewStruct,
 	Return,
 	StructDeclaration,
 	VariableAssignment,
@@ -36,11 +37,15 @@ impl CompilationContext<'_> {
 		let mut module = Module::new("main");
 
 		module.create_extern_function(
-			"_airt_print_float", &vec![Type::Float(0)], Type::Void
+			"malloc", &vec![Type::Integer(0, 32)], Type::Void(1)
 		);
 
 		module.create_extern_function(
-			"_airt_print_int", &vec![Type::Integer(0, 64)], Type::Void
+			"_airt_print_float", &vec![Type::Float(0)], Type::Void(0)
+		);
+
+		module.create_extern_function(
+			"_airt_print_int", &vec![Type::Integer(0, 64)], Type::Void(0)
 		);
 
 		module.create_extern_function(
@@ -48,7 +53,7 @@ impl CompilationContext<'_> {
 		);
 
 		module.create_extern_function(
-			"_airt_log_simulation", &vec![Type::Float(0), Type::Float(0)], Type::Void
+			"_airt_log_simulation", &vec![Type::Float(0), Type::Float(0)], Type::Void(0)
 		);
 
 		CompilationContext {
@@ -56,7 +61,7 @@ impl CompilationContext<'_> {
 				"airt_handle_function_call", &vec![Type::CString(0), Type::Float(1)], Type::Integer(0, 64)
 			),
 			airt_finish_function_call: module.create_extern_function(
-				"airt_finish_function_call", &vec![Type::CString(0), Type::Integer(0, 64)], Type::Void
+				"airt_finish_function_call", &vec![Type::CString(0), Type::Integer(0, 64)], Type::Void(0)
 			),
 			placeholder_evaluation_float: module.create_extern_function(
 				"airt_predict_float", &vec![Type::CString(0), Type::Integer(0, 64), Type::Integer(0, 64)], Type::Float(0)
@@ -111,6 +116,9 @@ pub fn compile_pair(context: &mut CompilationContext, pair: Pair<parser::Rule>) 
 		},
 		parser::Rule::math => {
 			Some(Math::compile(context, pair))
+		},
+		parser::Rule::new_struct => {
+			Some(NewStruct::compile(context, pair))
 		},
 		parser::Rule::property_assignment => {
 			Some(VariableAssignment::compile(context, pair))

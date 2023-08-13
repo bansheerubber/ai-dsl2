@@ -16,7 +16,7 @@ impl StructDeclaration {
 
 			(
 				field_pairs.next().unwrap().as_str().to_string(), // property name
-				convert_type_name(field_pairs.next().unwrap().as_str()), // property type
+				convert_type_name(&context.module, field_pairs.next().unwrap().as_str()), // property type
 			)
 		}).collect();
 

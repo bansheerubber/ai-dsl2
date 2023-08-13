@@ -25,7 +25,7 @@ impl Function {
 			} else if pair.as_rule() == parser::Rule::function_declaration_args { // interpret arguments
 				for argument_pair in pair.into_inner() {
 					if argument_pair.as_rule() == parser::Rule::type_token {
-						argument_types.push(convert_type_name(argument_pair.as_str()));
+						argument_types.push(convert_type_name(&context.module, argument_pair.as_str()));
 					} else if argument_pair.as_rule() == parser::Rule::token {
 						argument_names.push(String::from(argument_pair.as_str()));
 					}
@@ -36,7 +36,7 @@ impl Function {
 		context.current_function = Some(context.module.create_function(
 			name,
 			&argument_types,
-			convert_type_name(return_type)
+			convert_type_name(&context.module, return_type)
 		));
 
 		let block = context.module.new_block(name, &context.current_function.as_ref().unwrap());

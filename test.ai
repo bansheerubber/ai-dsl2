@@ -1,3 +1,16 @@
+struct car {
+	acceleration_default: float,
+	position: float,
+	acceleration: float,
+	acceleration_direction: int,
+	speed: float,
+	desired_speed: float,
+	max_speed: float,
+	next_lane: int,
+	change_lane_start: int,
+	current_tick: int,
+}
+
 let car1_acceleration_default: float;
 
 let car1_position: float;
@@ -159,6 +172,9 @@ function tick(): float {
 }
 
 function main(): int {
+	let car: car = new car;
+	// car.car = 30.0;
+
 	car1_acceleration_default = 30.0;
 
 	car1_position = 0.0;
