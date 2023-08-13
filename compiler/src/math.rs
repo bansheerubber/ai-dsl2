@@ -468,6 +468,7 @@ impl Module {
 		match type_enum {
 			Type::Float(pointer_number) => Type::Float(pointer_number + 1),
 			Type::Integer(pointer_number, bits) => Type::Integer(pointer_number + 1, bits),
+			Type::Struct(pointer_number, index) => Type::Struct(pointer_number + 1, index),
 			_ => todo!(),
 		}
 	}
@@ -476,6 +477,7 @@ impl Module {
 		match type_enum {
 			Type::Float(pointer_number) => Type::Float(pointer_number - 1),
 			Type::Integer(pointer_number, bits) => Type::Integer(pointer_number - 1, bits),
+			Type::Struct(pointer_number, index) => Type::Struct(pointer_number - 1, index),
 			_ => todo!(),
 		}
 	}

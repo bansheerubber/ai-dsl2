@@ -1,14 +1,14 @@
 pub type Bits = u32;
 pub type Pointers = u8;
 
-#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Type {
 	CString(Pointers),
 	Float(Pointers),
 	FloatArray(usize),
 	Integer(Pointers, Bits),
-	#[default]
-	Void,
+	Struct(Pointers, usize),
+	Void(Pointers),
 }
 
 impl Type {
@@ -18,7 +18,8 @@ impl Type {
 			Type::Float(p) => Type::Float(p + 1),
 			Type::FloatArray(size) => Type::FloatArray(size),
 			Type::Integer(p, bits) => Type::Integer(p + 1, bits),
-			Type::Void => Type::Void,
+			Type::Struct(p, index) => Type::Struct(p + 1, index),
+			Type::Void(p) => Type::Void(p + 1),
 		}
 	}
 
@@ -28,7 +29,8 @@ impl Type {
 			Type::Float(number) => number,
 			Type::FloatArray(_) => 1,
 			Type::Integer(number, _) => number,
-			Type::Void => 0,
+			Type::Struct(number, _) => number,
+			Type::Void(p) => p,
 		}
 	}
 
@@ -38,7 +40,8 @@ impl Type {
 			Type::Float(_) => Type::Float(0),
 			Type::FloatArray(size) => Type::FloatArray(size),
 			Type::Integer(_, bits) => Type::Integer(0, bits),
-			Type::Void => Type::Void,
+			Type::Struct(_, index) => Type::Struct(0, index),
+			Type::Void(_) => Type::Void(0),
 		}
 	}
 
@@ -48,7 +51,8 @@ impl Type {
 			Type::Float(pointer_number) => Type::Float(pointer_number),
 			Type::FloatArray(size) => Type::FloatArray(size),
 			Type::Integer(pointer_number, _) => Type::Integer(pointer_number, 0),
-			Type::Void => Type::Void,
+			Type::Struct(pointer_number, index) => Type::Struct(pointer_number, index),
+			Type::Void(pointer_number) => Type::Void(pointer_number),
 		}
 	}
 

@@ -46,12 +46,19 @@ impl Module {
 					LLVMPointerType(i8_type, 0)
 				},
 				Type::Float(0) => LLVMDoubleType(),
-				Type::Float(1) => LLVMPointerType(LLVMDoubleType(), 64),
+				Type::Float(1) => LLVMPointerType(LLVMDoubleType(), 0),
 				Type::FloatArray(size) => LLVMArrayType(LLVMDoubleType(), size as u32),
 				Type::Integer(0, bits) => LLVMIntType(bits),
-				Type::Integer(1, bits) => LLVMPointerType(LLVMIntType(bits), 64),
-				Type::Void => LLVMVoidType(),
-				_ => LLVMVoidType(),
+				Type::Integer(1, bits) => LLVMPointerType(LLVMIntType(bits), 0),
+				Type::Struct(0, index) => {
+					self.lookup_struct_type(index).type_ref
+				},
+				Type::Struct(1, index) => {
+					LLVMPointerType(self.lookup_struct_type(index).type_ref, 0)
+				},
+				Type::Void(0) => LLVMVoidType(),
+				Type::Void(1) => LLVMPointerTypeInContext(self.get_context(), 0),
+				_ => todo!("{:?}", type_enum),
 			}
 		}
 	}
@@ -61,7 +68,7 @@ impl Module {
 		let airt_register_function = self.create_extern_function(
 			"airt_register_function",
 			&vec![Type::CString(0), Type::Integer(0, 64), Type::Integer(0, 64)],
-			Type::Void
+			Type::Void(0)
 		);
 
 		// TODO remove this inline
@@ -75,7 +82,7 @@ impl Module {
 				];
 
 				function_type = LLVMFunctionType(
-					self.to_llvm_type(Type::Void), arguments.as_mut_ptr(), arguments.len() as u32, 0
+					self.to_llvm_type(Type::Void(0)), arguments.as_mut_ptr(), arguments.len() as u32, 0
 				);
 
 				function = LLVMAddFunction(
@@ -94,7 +101,7 @@ impl Module {
 				function_type,
 				learned_values: vec![],
 				name: String::from("airt_init"),
-				return_type: Type::Void,
+				return_type: Type::Void(0),
 
 				check_arguments: false,
 			};
@@ -102,7 +109,7 @@ impl Module {
 			self.function_table.add_function("airt_init", function)
 		};
 
-		let airt_train = self.create_extern_function("airt_train", &vec![], Type::Void);
+		let airt_train = self.create_extern_function("airt_train", &vec![], Type::Void(0));
 
 		// generate main function
 		let main_function = self.create_extern_function("main", &vec![], Type::Integer(0, 64));
@@ -176,10 +183,10 @@ impl Module {
 			main_block,
 			&airt_init,
 			&mut vec![Value {
-				type_enum: Type::Void,
+				type_enum: Type::Void(0),
 				value: reset_function_value,
 			}, Value {
-				type_enum: Type::Void,
+				type_enum: Type::Void(0),
 				value: tick_function_value,
 			}]
 		);

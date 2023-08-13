@@ -206,7 +206,7 @@ impl Module {
 			);
 
 			Ok(Value {
-				type_enum: Type::Void,
+				type_enum: Type::Void(0),
 				value: LLVMBuildStore(builder.get_builder(), value.value, array_element),
 			})
 		}
