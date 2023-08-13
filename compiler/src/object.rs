@@ -1,10 +1,10 @@
 use llvm_sys::core::*;
 use llvm_sys::prelude::*;
-use llvm_sys::target::LLVMGetModuleDataLayout;
-use llvm_sys::target::LLVMSizeOfTypeInBits;
+use llvm_sys::target::*;
 use std::collections::HashMap;
 
-use crate::{ Module, Type, };
+use crate::FunctionKey;
+use crate::{ Block, Builder, Module, Type, Value, };
 
 // provides everything that is needed to talk to LLVM concerning this struct type
 // 1. property types & indices
@@ -16,11 +16,13 @@ pub(crate) struct StructType {
  pub(crate) name: String,
  pub(crate) property_to_index: HashMap<String, usize>,
  pub(crate) size: usize,
+ pub(crate) type_index: usize,
  pub(crate) type_ref: LLVMTypeRef,
 }
 
 #[derive(Debug, Default)]
 pub struct TypeTable {
+	index_to_struct: Vec<String>,
 	structs: HashMap<String, StructType>,
 }
 
@@ -28,7 +30,7 @@ impl Module {
 	// creates a struct type by calculating its size and then throwing it into the type table
 	pub fn create_struct_type(&mut self, name: &str, properties: HashMap<String, Type>) {
 		unsafe {
-			let type_ref = LLVMStructCreateNamed(self.get_context(), self.string_table.to_llvm_string(&name));
+			let type_ref = LLVMStructCreateNamed(self.get_context(), self.string_table.to_llvm_string(&format!("struct.{}", name)));
 
 			let mut property_to_index = HashMap::new();
 			let mut arguments = Vec::new();
@@ -50,9 +52,12 @@ impl Module {
 					name: name.to_string(),
 					property_to_index,
 					size: (LLVMSizeOfTypeInBits(data_layout, type_ref) / 8) as usize,
+					type_index: self.type_table.index_to_struct.len(),
 					type_ref,
 				},
 			);
+
+			self.type_table.index_to_struct.push(name.to_string());
 		}
 
 		/*
@@ -65,5 +70,43 @@ impl Module {
 			- LLVMStructGetTypeAtIndex
 			- LLVMBuildStructGEP2 (GEP = get element pointer)
 		*/
+	}
+
+	// allocates a struct
+	pub fn add_struct_malloc(&mut self, block: Block, struct_type_name: &str) -> Value {
+		unsafe {
+			let builder = Builder::new();
+			builder.seek_to_end(block);
+
+			let struct_size = self.type_table.structs.get(struct_type_name).unwrap().size;
+
+			let malloc = self.add_function_call(
+				block,
+				&FunctionKey {
+					name: String::from("malloc"),
+				},
+				&mut [Value {
+					type_enum: Type::Integer(0, 32),
+					value: LLVMConstInt(LLVMIntType(32), struct_size as u64, 0),
+				}],
+			);
+
+			let struct_type = self.type_table.structs.get(struct_type_name).unwrap();
+
+			Value {
+				type_enum: Type::Struct(1, struct_type.type_index),
+				value: malloc.value,
+			}
+		}
+	}
+
+	// looks up the struct type index from struct name
+	pub fn lookup_struct_type_index(&self, type_name: &str) -> usize {
+		self.type_table.structs.get(type_name).unwrap().type_index
+	}
+
+	pub(crate) fn lookup_struct_type(&self, type_index: usize) -> &StructType {
+		let type_name = &self.type_table.index_to_struct[type_index];
+		self.type_table.structs.get(type_name).unwrap()
 	}
 }

@@ -89,15 +89,21 @@ impl Module {
 			let builder = Builder::new();
 			builder.seek_to_end(block);
 
+			let llvm_type = self.to_llvm_type(type_enum);
+			let upgraded_type = if let Type::Struct(_, _) = type_enum {
+				type_enum
+			} else {
+				self.upgrade_type(type_enum)
+			};
+
 			let value = Value {
-				type_enum: self.upgrade_type(type_enum),
+				type_enum: upgraded_type,
 				value: LLVMBuildAlloca(
 					builder.get_builder(),
-					self.to_llvm_type(type_enum),
+					llvm_type,
 					self.string_table.to_llvm_string(name)
 				),
 			};
-
 
 			self.variable_table.add(
 				block.get_parent(),
@@ -165,15 +171,22 @@ impl Module {
 			let builder = Builder::new();
 			builder.seek_to_end(block);
 
-			let value = self.math_resolve_value(block, value, location.type_enum); // resolve & convert type
-			if value.type_enum != self.downgrade_type(location.type_enum) {
-				return Err(MathError::IncompatibleTypes(location.type_enum, value.type_enum));
-			}
+			if let Type::Struct(_, _) = value.type_enum {
+				Ok(Value {
+					type_enum: Type::Void(0),
+					value: LLVMBuildStore(builder.get_builder(), value.value, location.value),
+				})
+			} else {
+				let value = self.math_resolve_value(block, value, location.type_enum); // resolve & convert type
+				if value.type_enum != self.downgrade_type(location.type_enum) {
+					return Err(MathError::IncompatibleTypes(location.type_enum, value.type_enum));
+				}
 
-			Ok(Value {
-				type_enum: Type::Void,
-				value: LLVMBuildStore(builder.get_builder(), value.value, location.value),
-			})
+				Ok(Value {
+					type_enum: Type::Void(0),
+					value: LLVMBuildStore(builder.get_builder(), value.value, location.value),
+				})
+			}
 		}
 	}
 
