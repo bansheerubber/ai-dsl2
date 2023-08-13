@@ -556,11 +556,11 @@ impl Module {
 							if pointer_number == 1 {
 								Value {
 									type_enum: Type::Float(1),
-									value: LLVMBuildBitCast(
+									value: LLVMBuildAddrSpaceCast(
 										builder.get_builder(),
 										value.value,
 										self.to_llvm_type(Type::Float(1)),
-										self.string_table.to_llvm_string("bitcast"),
+										self.string_table.to_llvm_string("addrspacecast"),
 									),
 								}
 							} else {
