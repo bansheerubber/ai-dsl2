@@ -97,10 +97,14 @@ impl Module {
 			);
 
 			let struct_type = self.type_table.structs.get(struct_type_name).unwrap();
-
 			Value {
 				type_enum: Type::Struct(1, struct_type.type_index),
-				value: malloc.value,
+				value: LLVMBuildBitCast(
+					builder.get_builder(),
+					malloc.value,
+					LLVMPointerType(struct_type.type_ref, 0),
+					self.string_table.to_llvm_string("structcast"),
+				),
 			}
 		}
 	}
@@ -136,10 +140,17 @@ impl Module {
 				.get(property)
 				.unwrap();
 
+			let object_location = LLVMBuildLoad2(
+				builder.get_builder(),
+				self.to_llvm_type(obj.type_enum),
+				obj.value,
+				self.string_table.to_llvm_string(&format!("{}load", type_name))
+			);
+
 			let property_location = LLVMBuildStructGEP2(
 				builder.get_builder(),
 				struct_type.type_ref,
-				obj.value,
+				object_location,
 				property_index as u32,
 				self.string_table.to_llvm_string(&format!("{}.{}", type_name, property))
 			);
@@ -171,7 +182,7 @@ impl Module {
 				.get(type_name)
 				.unwrap();
 
-			let property_type = struct_type
+			let property_type = *struct_type
 				.property_to_type
 				.get(property)
 				.unwrap();
@@ -181,14 +192,28 @@ impl Module {
 				.get(property)
 				.unwrap();
 
+			let object_location = LLVMBuildLoad2(
+				builder.get_builder(),
+				self.to_llvm_type(obj.type_enum),
+				obj.value,
+				self.string_table.to_llvm_string(&format!("{}load", type_name))
+			);
+
+			let gep2 = LLVMBuildStructGEP2(
+				builder.get_builder(),
+				struct_type.type_ref,
+				object_location,
+				property_index as u32,
+				self.string_table.to_llvm_string(&format!("{}.{}", type_name, property))
+			);
+
 			Ok(Value {
-				type_enum: property_type.increment_pointer_number(),
-				value: LLVMBuildStructGEP2(
+				type_enum: property_type,
+				value: LLVMBuildLoad2(
 					builder.get_builder(),
-					struct_type.type_ref,
-					obj.value,
-					property_index as u32,
-					self.string_table.to_llvm_string(&format!("{}.{}", type_name, property))
+					self.to_llvm_type(property_type),
+					gep2,
+					self.string_table.to_llvm_string(&format!("{}.{}load", type_name, property))
 				),
 			})
 		}

@@ -10,8 +10,9 @@ cargo run
 popd
 
 cp ../main.bc main.bc
+llvm-dis ../main.bc -o ../main.ll
 
-llc -filetype=obj --relocation-model=pic main.bc
+llc -O0 --dwarf64 -filetype=obj --relocation-model=pic main.bc
 clang main.o \
 $LIBTORCH/lib/libtorch.so \
 $LIBTORCH/lib/libtorch_cuda.so \

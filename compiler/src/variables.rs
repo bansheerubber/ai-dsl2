@@ -121,8 +121,14 @@ impl Module {
 
 	pub fn add_global_variable(&mut self, name: &str, type_enum: Type) -> Value {
 		unsafe {
+			let upgraded_type = if let Type::Struct(_, _) = type_enum {
+				type_enum
+			} else {
+				self.upgrade_type(type_enum)
+			};
+
 			let value = Value {
-				type_enum: self.upgrade_type(type_enum),
+				type_enum: upgraded_type,
 				value: LLVMAddGlobal(
 					self.get_module(),
 					self.to_llvm_type(type_enum),
@@ -146,6 +152,15 @@ impl Module {
 				}
 				Type::Integer(_, bits) => {
 					LLVMSetInitializer(value.value, LLVMConstInt(self.to_llvm_type(Type::Integer(0, bits)), 0, 0));
+				},
+				Type::Struct(_, _) => {
+					LLVMSetInitializer(
+						value.value,
+						LLVMConstIntToPtr(
+							LLVMConstInt(self.to_llvm_type(Type::Integer(0, 64)), 0, 0),
+							self.to_llvm_type(type_enum),
+						),
+					);
 				},
 				_ => todo!(),
 			}
