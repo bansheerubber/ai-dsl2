@@ -10,7 +10,7 @@ use super::{ LearnedValue, compile_pair, };
 enum MathIR<'a> {
 	Constant {
 		kind: parser::Rule,
-		value: String,
+		value: Pair<'a, parser::Rule>,
 	},
 	LogicOperation {
 		operation: parser::Rule,
@@ -46,10 +46,27 @@ impl Math {
 				value,
 			} => {Ok((
 				match kind {
-					parser::Rule::float => context.module.create_immediate_float(value.parse::<f64>().unwrap()),
-					parser::Rule::integer => context.module.create_immediate_integer(value.parse::<u64>().unwrap()),
+					parser::Rule::float => context.module.create_immediate_float(value.as_str().parse::<f64>().unwrap()),
+					parser::Rule::integer => context.module.create_immediate_integer(value.as_str().parse::<u64>().unwrap()),
 					parser::Rule::learned_value => LearnedValue::compile(context),
-					parser::Rule::token => context.module.get_variable(context.current_block.unwrap(), &value)?,
+					parser::Rule::property_access => {
+						let mut property_chain = value.into_inner();
+						let mut value = context.module.get_variable(
+							context.current_block.unwrap(),
+							property_chain.next().unwrap().as_str()
+						).unwrap();
+
+						for property in property_chain {
+							value = context.module.get_obj_property(
+								context.current_block.unwrap(),
+								value, // use last valeu in the chain, should always be an object
+								property.as_str(),
+							).unwrap();
+						}
+
+						value
+					},
+					parser::Rule::token => context.module.get_variable(context.current_block.unwrap(), value.as_str())?,
 					_ => unreachable!(),
 				},
 				None
@@ -168,7 +185,7 @@ impl Math {
 				parser::Rule::math => Math::_compile(primary),
 				kind => Box::new(MathIR::Constant {
 					kind,
-					value: String::from(primary.as_str()),
+					value: primary,
 				}),
 			})
 			.map_prefix(|op, value| Box::new(MathIR::UnaryOperation {
