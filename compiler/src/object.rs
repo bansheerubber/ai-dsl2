@@ -4,6 +4,7 @@ use llvm_sys::target::*;
 use std::collections::HashMap;
 
 use crate::FunctionKey;
+use crate::MathError;
 use crate::{ Block, Builder, Module, Type, Value, };
 
 // provides everything that is needed to talk to LLVM concerning this struct type
@@ -15,6 +16,7 @@ use crate::{ Block, Builder, Module, Type, Value, };
 pub(crate) struct StructType {
  pub(crate) name: String,
  pub(crate) property_to_index: HashMap<String, usize>,
+ pub(crate) property_to_type: HashMap<String, Type>,
  pub(crate) size: usize,
  pub(crate) type_index: usize,
  pub(crate) type_ref: LLVMTypeRef,
@@ -33,11 +35,13 @@ impl Module {
 			let type_ref = LLVMStructCreateNamed(self.get_context(), self.string_table.to_llvm_string(&format!("struct.{}", name)));
 
 			let mut property_to_index = HashMap::new();
+			let mut property_to_type = HashMap::new();
 			let mut arguments = Vec::new();
 			let mut counter = 0;
 			for (name, &arg_type) in properties.iter() {
 				arguments.push(self.to_llvm_type(arg_type));
 				property_to_index.insert(name.to_string(), counter);
+				property_to_type.insert(name.to_string(), arg_type);
 
 				counter += 1;
 			}
@@ -51,6 +55,7 @@ impl Module {
 				StructType {
 					name: name.to_string(),
 					property_to_index,
+					property_to_type,
 					size: (LLVMSizeOfTypeInBits(data_layout, type_ref) / 8) as usize,
 					type_index: self.type_table.index_to_struct.len(),
 					type_ref,
@@ -97,6 +102,52 @@ impl Module {
 				type_enum: Type::Struct(1, struct_type.type_index),
 				value: malloc.value,
 			}
+		}
+	}
+
+	pub fn add_store_to_obj(
+		&mut self,
+		block: Block,
+		obj: Value,
+		property: &str,
+		property_value: Value
+	) -> Result<Value, MathError> {
+		unsafe {
+			let builder = Builder::new();
+			builder.seek_to_end(block);
+
+			let Type::Struct(_, type_index) = obj.type_enum else {
+				return Err(MathError::UnsupportedOperation);
+			};
+
+			let type_name = self.type_table.index_to_struct.get(type_index).unwrap();
+
+			let struct_type = self.type_table.structs
+				.get(type_name)
+				.unwrap();
+
+			let property_type = struct_type
+				.property_to_type
+				.get(property)
+				.unwrap();
+
+			let property_index = *struct_type
+				.property_to_index
+				.get(property)
+				.unwrap();
+
+			let property_location = LLVMBuildStructGEP2(
+				builder.get_builder(),
+				struct_type.type_ref,
+				obj.value,
+				property_index as u32,
+				self.string_table.to_llvm_string(&format!("{}.{}", type_name, property))
+			);
+
+			Ok(Value {
+				type_enum: *property_type,
+				value: LLVMBuildStore(builder.get_builder(), property_value.value, property_location),
+			})
 		}
 	}
 
