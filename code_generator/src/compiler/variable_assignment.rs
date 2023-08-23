@@ -31,7 +31,11 @@ impl VariableAssignment {
 						assignment_value,
 					).unwrap();
 				} else {
-					// TODO something, you know what
+					value = context.module.get_obj_property( // TODO this hasn't been tested b/c nested objects aren't even implemented yet
+						context.current_block.unwrap(),
+						value, // use last valeu in the chain, should always be an object
+						property_name,
+					).unwrap();
 				}
 			}
 
