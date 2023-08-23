@@ -151,6 +151,49 @@ impl Module {
 		}
 	}
 
+	pub fn get_obj_property(
+		&mut self,
+		block: Block,
+		obj: Value,
+		property: &str,
+	) -> Result<Value, MathError> {
+		unsafe {
+			let builder = Builder::new();
+			builder.seek_to_end(block);
+
+			let Type::Struct(_, type_index) = obj.type_enum else {
+				return Err(MathError::UnsupportedOperation);
+			};
+
+			let type_name = self.type_table.index_to_struct.get(type_index).unwrap();
+
+			let struct_type = self.type_table.structs
+				.get(type_name)
+				.unwrap();
+
+			let property_type = struct_type
+				.property_to_type
+				.get(property)
+				.unwrap();
+
+			let property_index = *struct_type
+				.property_to_index
+				.get(property)
+				.unwrap();
+
+			Ok(Value {
+				type_enum: property_type.increment_pointer_number(),
+				value: LLVMBuildStructGEP2(
+					builder.get_builder(),
+					struct_type.type_ref,
+					obj.value,
+					property_index as u32,
+					self.string_table.to_llvm_string(&format!("{}.{}", type_name, property))
+				),
+			})
+		}
+	}
+
 	// looks up the struct type index from struct name
 	pub fn lookup_struct_type_index(&self, type_name: &str) -> usize {
 		self.type_table.structs.get(type_name).unwrap().type_index
