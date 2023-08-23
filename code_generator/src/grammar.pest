@@ -15,7 +15,7 @@ string_literal = @{ (("'") ~ ('\x00'..'\x26' | '\x28'..'\xFF')* ~ ("'")) | (("\"
 learned_value = { "#" }
 
 token = @{ (alpha | special) ~ (alpha | digit | special)* }
-property_access = @{ token ~ "." ~ token }
+property_access = { token ~ "." ~ token }
 type_token = @{ (alpha | special) ~ (alpha | digit | special)* }
 new_struct = { "new" ~ token }
 variable_declaration = { "let" ~ token ~ ":" ~ type_token ~ ("=" ~ (new_struct | math))? }
